@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="disable-capture" content="false">
+    <title>Placement Team Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: rgb(36, 36, 36);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        .dashboard-container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .dashboard-logo {
+            margin: 20px 0;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .dashboard-header {
+            margin: 20px 0;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .qr-container img {
+            max-width: 250px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        .download-btn {
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+        }
+
+        .success-message {
+            color: #4CAF50;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        /* Override some Bootstrap defaults */
+        .btn-outline-primary {
+            border-width: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Logo -->
+        <div class="dashboard-logo">
+            Naan Mudhalvan
+        </div>
+
+        <!-- Header Text -->
+        <div class="dashboard-header">
+            Hello Placement Team
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-group w-100 mb-4" role="group">
+            <a href="{% url 'index' %}" class="btn btn-dark active">Job Fairs</a>
+            <a href="{% url 'companies' %}" class="btn btn-outline-secondary">Companies</a>
+            <button class="btn btn-outline-secondary">Analytics</button>
+        </div>
+
+        <!-- Success Message -->
+        {% if success_message %}
+        <div class="alert alert-success text-center">{{ success_message }}</div>
+        {% endif %}
+
+        <!-- QR Code Section -->
+        {% if qr_image and district %}
+        <div class="text-center mb-4">
+            <img src="{{ qr_image }}" alt="QR Code" class="img-fluid mb-3">
+            <div>
+                <a href="{{ qr_image }}" download="job_fair_qr.png" class="btn btn-success">Download QR Code</a>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Form Section -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title text-center mb-4">Create Job Fair</h5>
+                <form method="POST">
+                    {% csrf_token %}
+                    <!-- District Dropdown -->
+                    <div class="mb-3">
+                        <select name="district" class="form-select" required>
+                        <option value="" disabled selected>Select District</option>
+                        <option value="Ariyalur">Ariyalur</option>
+                        <option value="Chengalpattu">Chengalpattu</option>
+                        <option value="Chennai">Chennai</option>
+                        <option value="Coimbatore">Coimbatore</option>
+                        <option value="Cuddalore">Cuddalore</option>
+                        <option value="Dharmapuri">Dharmapuri</option>
+                        <option value="Dindigul">Dindigul</option>
+                        <option value="Erode">Erode</option>
+                        <option value="Kallakurichi">Kallakurichi</option>
+                        <option value="Kancheepuram">Kancheepuram</option>
+                        <option value="Karur">Karur</option>
+                        <option value="Krishnagiri">Krishnagiri</option>
+                        <option value="Madurai">Madurai</option>
+                        <option value="Mayiladuthurai">Mayiladuthurai</option>
+                        <option value="Nagapattinam">Nagapattinam</option>
+                        <option value="Namakkal">Namakkal</option>
+                        <option value="Nilgiris">Nilgiris</option>
+                        <option value="Perambalur">Perambalur</option>
+                        <option value="Pudukkottai">Pudukkottai</option>
+                        <option value="Ramanathapuram">Ramanathapuram</option>
+                        <option value="Ranipet">Ranipet</option>
+                        <option value="Salem">Salem</option>
+                        <option value="Sivaganga">Sivaganga</option>
+                        <option value="Tenkasi">Tenkasi</option>
+                        <option value="Thanjavur">Thanjavur</option>
+                        <option value="Theni">Theni</option>
+                        <option value="Thoothukudi">Thoothukudi</option>
+                        <option value="Tiruchirappalli">Tiruchirappalli</option>
+                        <option value="Tirunelveli">Tirunelveli</option>
+                        <option value="Tirupattur">Tirupattur</option>
+                        <option value="Tiruppur">Tiruppur</option>
+                        <option value="Tiruvallur">Tiruvallur</option>
+                        <option value="Tiruvannamalai">Tiruvannamalai</option>
+                        <option value="Tiruvarur">Tiruvarur</option>
+                        <option value="Vellore">Vellore</option>
+                        <option value="Viluppuram">Viluppuram</option>
+                        <option value="Virudhunagar">Virudhunagar</option>
+                    </select>
+                </div>
+
+        <!-- Date Picker -->
+        <div class="mb-3 position-relative">
+            <input type="date" id="job-fair-date" name="job-fair-date" class="form-control" required>
+        </div>
+        
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-dark w-100">Create</button>
+        </form>
+        </div>
+        </div>
+        </div>
+
+        <!-- Bootstrap JS (optional, for future interactions) -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- JavaScript to show alert -->
+       
+    </body>
+</html>
