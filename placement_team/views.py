@@ -1,8 +1,13 @@
+import random
+import string
 from django.contrib import messages 
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
-from .models import Job_fairs
+
+from recruiters.models import Recruiter
+from .models import Job_fairs, RecruiterJobFair
 import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
@@ -125,10 +130,49 @@ def index(request):
 @login_required(login_url='login')
 def companies(request):
     job_fairs= Job_fairs.objects.all()
-    job_fair_list = [f"{job_fair.district} - {job_fair.date_of_job_fair}" for job_fair in job_fairs]
-    recruiters = [
-        {'email': 'hr@axis.com', 'password': 'axis098$$'},
-        {'email': 'hr@avionltd.com', 'password': 'avio03@4#'},
-        {'email': 'hr@axis.com', 'password': 'axis098$$'}
-    ]
-    return render(request, 'placement_team_app/companies.html', {'job_fair_list':job_fair_list, 'recruiters': recruiters})
+    recruiters = Recruiter.objects.all()
+
+    if request.method == "POST":
+        job_fair_id = request.POST.get('job_fair')
+        recruiter_email= request.POST.get('recrutier_email')
+
+        if not job_fair_id or not recruiter_email:
+            return redirect('companies')
+
+        password = ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation, k=8))
+
+        recruiter,created = Recruiter.objects.get_or_create(recruiter_email=recruiter_email, defaults={'recruiter_password':password})
+
+        if not created and not recruiter.recruiter_password:
+            recruiter.recruiter_password= password
+            recruiter.save()
+
+        job_fair= Job_fairs.objects.get(job_fair_id=job_fair_id)
+        RecruiterJobFair.objects.get_or_crete(
+            recruiter=recruiter,
+            job_fair=job_fair
+        )
+
+        return redirect('companies')
+    return render(request,'placement_team_app/companies.html',{'job_fair_list': job_fairs,})
+
+def get_recruiters_for_job_fair(request, job_fair_id):
+    """Get recruiters for a specific job fair"""
+    try:
+        job_fair = Job_fairs.objects.get(job_fair_id=job_fair_id)
+        
+        # Get all RecruiterJobFair entries for this job fair
+        recruiter_job_fairs = RecruiterJobFair.objects.filter(job_fair=job_fair)
+        
+        # Get all associated recruiters
+        recruiters_data = []
+        for rjf in recruiter_job_fairs:
+            recruiters_data.append({
+                'id': rjf.recruiter.recruiter_id,
+                'email': rjf.recruiter.recruiter_email,
+                'password': rjf.recruiter.recruiter_password
+            })
+        
+        return JsonResponse({'recruiters': recruiters_data})
+    except Job_fairs.DoesNotExist:
+        return JsonResponse({'error': 'Job fair not found'}, status=404)
