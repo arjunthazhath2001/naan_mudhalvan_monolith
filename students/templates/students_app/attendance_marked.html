@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5dc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .confirmation-container {
+            text-align: center;
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        .logo {
+            margin: 20px 0;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .confirmation-icon {
+            color: #4CAF50;
+            font-size: 3em;
+            margin: 20px 0;
+        }
+
+        .confirmation-message {
+            margin: 20px 0;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="confirmation-container">
+        <div class="logo">
+            Naan Mudhalvan
+        </div>
+
+        <div class="confirmation-icon">✓</div>
+
+        <div class="confirmation-message">
+            <h2>{{ message }}</h2>
+        </div>
+    </div>
+</body>
+</html>

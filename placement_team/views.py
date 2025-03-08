@@ -134,7 +134,7 @@ def companies(request):
     
     if request.method == "POST":
         job_fair_id = request.POST.get('job_fair')
-        selected_job_fair_id = job_fair_id  # Remember the selection
+        selected_job_fair_id = job_fair_id
         recruiter_email = request.POST.get('recruiter_email')
         
         if not job_fair_id or not recruiter_email:
@@ -152,21 +152,33 @@ def companies(request):
             recruiter.save()
             
         job_fair = Job_fairs.objects.get(job_fair_id=job_fair_id)
-        RecruiterJobFair.objects.get_or_create(
+        
+        # This line creates the recruiter_job_fair object
+        recruiter_job_fair, created_rjf = RecruiterJobFair.objects.get_or_create(
             recruiter=recruiter,
             job_fair=job_fair
         )
         
-        # Redirect with the selected job fair ID as a query parameter
+        # Now we can use recruiter_job_fair
+        if not recruiter_job_fair.qr_code:
+            qr_code_image = generate_recruiter_qr_code(job_fair_id, recruiter.recruiter_id)
+            recruiter_job_fair.qr_code.save(
+                f"recruiter_job_fair_{job_fair_id}_{recruiter.recruiter_id}.png", 
+                ContentFile(qr_code_image)
+            )
+            recruiter_job_fair.save()
+        
         return redirect(f'/nm/pteam/companies?job_fair_id={job_fair_id}')
     else:
-        # Check if a job fair ID was passed in the URL
         selected_job_fair_id = request.GET.get('job_fair_id')
     
     return render(request, 'placement_team_app/companies.html', {
         'job_fair_list': job_fairs,
         'selected_job_fair_id': selected_job_fair_id
     })
+
+
+# Update in placement_team/views.py
 
 def get_recruiters_for_job_fair(request, job_fair_id):
     """Get recruiters for a specific job fair"""
@@ -182,7 +194,8 @@ def get_recruiters_for_job_fair(request, job_fair_id):
             recruiters_data.append({
                 'id': rjf.recruiter.recruiter_id,
                 'email': rjf.recruiter.recruiter_email,
-                'password': rjf.recruiter.recruiter_password
+                'password': rjf.recruiter.recruiter_password,
+                'qr_code_url': rjf.qr_code.url if rjf.qr_code else None
             })
         
         return JsonResponse({'recruiters': recruiters_data})
@@ -207,3 +220,60 @@ def reset_recruiter_password(request):
         return redirect(f'/nm/pteam/companies?job_fair_id={job_fair_id}')
     
     return redirect('companies')
+
+
+
+
+def generate_recruiter_qr_code(job_fair_id, recruiter_id):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=8,
+        border=4
+    )
+    
+    # The URL will be used by students to mark their attendance
+    attendance_url = f"http://localhost:8000/nm/students/mark-attendance/{job_fair_id}/{recruiter_id}/"
+    
+    qr.add_data(attendance_url)
+    qr.make(fit=True)
+    
+    qr_img = qr.make_image(fill="black", back_color='white')
+    
+    # Convert to RGB for adding text
+    img = qr_img.convert('RGB')
+    
+    # Get dimensions
+    width, height = img.size
+    
+    # Create a drawing context
+    draw = ImageDraw.Draw(img)
+    
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
+    except IOError:
+        font = ImageFont.load_default()
+    
+    instruction_text = "SCAN TO MARK ATTENDANCE"
+    
+    # Calculate text size
+    instruction_bbox = draw.textbbox((0, 0), instruction_text, font=font)
+    instruction_text_width = instruction_bbox[2] - instruction_bbox[0]
+    
+    # Position text
+    instruction_position = ((width - instruction_text_width) // 2, height + 10)
+    
+    # Create new image with space for text
+    new_img = Image.new('RGB', (width, height + 40), color='white')
+    new_img.paste(img, (0, 0))
+    
+    # Add text to new image
+    draw = ImageDraw.Draw(new_img)
+    draw.text(instruction_position, instruction_text, font=font, fill=(0, 0, 0))
+    
+    # Save the image to BytesIO
+    byte_io = BytesIO()
+    new_img.save(byte_io, 'PNG')
+    byte_io.seek(0)
+    
+    return byte_io.getvalue()

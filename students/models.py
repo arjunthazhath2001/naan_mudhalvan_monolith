@@ -14,3 +14,19 @@ class StudentRegistration(models.Model):
         
     def __str__(self):
         return f"{self.name} - {self.college_name}"
+
+
+class RecruiterStudentAttendance(models.Model):
+    job_fair_id = models.IntegerField()
+    recruiter_id = models.IntegerField()
+    student_registration_number = models.CharField(max_length=50)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'job_fair_recruiter_student_attendance'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['job_fair_id', 'recruiter_id', 'student_registration_number'], 
+                name='unique_student_recruiter_attendance'
+            )
+        ]
