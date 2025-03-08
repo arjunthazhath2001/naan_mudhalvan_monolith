@@ -15,6 +15,12 @@
             min-height: 100vh;
             font-family: Arial, sans-serif;
         }
+
+        .table-responsive {
+        overflow-x: auto;
+        max-width: 100%;
+        }
+    
         .dashboard-container {
             background-color: #fff;
             padding: 25px;
@@ -69,7 +75,9 @@
                 <select class="form-select" name="job_fair" id="job-fair-select" required>
                     <option selected disabled value="">Select a job fair</option>
                     {% for job_fair in job_fair_list %}
-                        <option value="{{job_fair.job_fair_id}}">{{ job_fair }}</option>
+                        <option value="{{ job_fair.job_fair_id }}" {% if selected_job_fair_id == job_fair.job_fair_id|stringformat:"i" %}selected{% endif %}>
+                            {{ job_fair }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
@@ -80,18 +88,20 @@
             </div>
         </form>
 
-        <table class="table table-bordered" id="recruiters-table">
-            <thead>
-                <tr>
-                    <th>Email</th>
-                    <th>Password</th>
-                    <th>Reset PSWD</th>
-                </tr>
-            </thead>
-            <tbody id="recruiters-list">
-            
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-bordered" id="recruiters-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Password</th>
+                        <th>Reset PSWD</th>
+                    </tr>
+                </thead>
+                <tbody id="recruiters-list">
+                    <!-- Recruiters will be loaded here dynamically -->
+                </tbody>
+            </table>
+        </div>
     
     </div>
     <!-- Bootstrap JS (optional, for future interactions) -->
@@ -99,6 +109,17 @@
 
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        const jobFairSelect = document.getElementById('job-fair-select');
+        
+        // Check if a job fair is pre-selected
+        if (jobFairSelect.value) {
+            // Trigger the change event to load recruiters
+            const event = new Event('change');
+            jobFairSelect.dispatchEvent(event);
+        }
+    });
+
         document.getElementById('job-fair-select').addEventListener('change', function(){
             const jobFairId = this.value;
 

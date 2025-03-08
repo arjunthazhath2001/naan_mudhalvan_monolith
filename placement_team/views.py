@@ -129,32 +129,44 @@ def index(request):
 
 @login_required(login_url='login')
 def companies(request):
-    job_fairs= Job_fairs.objects.all()
-    recruiters = Recruiter.objects.all()
-
+    job_fairs = Job_fairs.objects.all()
+    selected_job_fair_id = None
+    
     if request.method == "POST":
         job_fair_id = request.POST.get('job_fair')
-        recruiter_email= request.POST.get('recrutier_email')
-
+        selected_job_fair_id = job_fair_id  # Remember the selection
+        recruiter_email = request.POST.get('recruiter_email')
+        
         if not job_fair_id or not recruiter_email:
             return redirect('companies')
-
-        password = ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation, k=8))
-
-        recruiter,created = Recruiter.objects.get_or_create(recruiter_email=recruiter_email, defaults={'recruiter_password':password})
-
+            
+        password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        
+        recruiter, created = Recruiter.objects.get_or_create(
+            recruiter_email=recruiter_email, 
+            defaults={'recruiter_password': password}
+        )
+        
         if not created and not recruiter.recruiter_password:
-            recruiter.recruiter_password= password
+            recruiter.recruiter_password = password
             recruiter.save()
-
-        job_fair= Job_fairs.objects.get(job_fair_id=job_fair_id)
-        RecruiterJobFair.objects.get_or_crete(
+            
+        job_fair = Job_fairs.objects.get(job_fair_id=job_fair_id)
+        RecruiterJobFair.objects.get_or_create(
             recruiter=recruiter,
             job_fair=job_fair
         )
-
-        return redirect('companies')
-    return render(request,'placement_team_app/companies.html',{'job_fair_list': job_fairs,})
+        
+        # Redirect with the selected job fair ID as a query parameter
+        return redirect(f'/nm/pteam/companies?job_fair_id={job_fair_id}')
+    else:
+        # Check if a job fair ID was passed in the URL
+        selected_job_fair_id = request.GET.get('job_fair_id')
+    
+    return render(request, 'placement_team_app/companies.html', {
+        'job_fair_list': job_fairs,
+        'selected_job_fair_id': selected_job_fair_id
+    })
 
 def get_recruiters_for_job_fair(request, job_fair_id):
     """Get recruiters for a specific job fair"""
@@ -176,3 +188,20 @@ def get_recruiters_for_job_fair(request, job_fair_id):
         return JsonResponse({'recruiters': recruiters_data})
     except Job_fairs.DoesNotExist:
         return JsonResponse({'error': 'Job fair not found'}, status=404)
+    
+
+def reset_recruiter_password(request):
+    if request.method == "POST":
+        recruiter_id = request.POST.get('recruiter_id')
+        
+        # Generate a new random password
+        new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        
+        # Update the recruiter's password
+        recruiter = Recruiter.objects.get(recruiter_id=recruiter_id)
+        recruiter.recruiter_password = new_password
+        recruiter.save()
+        
+        return redirect('companies')
+    
+    return redirect('companies')
