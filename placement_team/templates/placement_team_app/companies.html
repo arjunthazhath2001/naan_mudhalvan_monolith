@@ -147,28 +147,36 @@
                     row.appendChild(passwordCell);
                     
                     // Reset password cell
+                    // Reset password cell
                     const resetCell = document.createElement('td');
                     const resetForm = document.createElement('form');
                     resetForm.method = 'POST';
                     resetForm.action = "{% url 'reset_password' %}";
-                    
+
                     const csrfInput = document.createElement('input');
                     csrfInput.type = 'hidden';
                     csrfInput.name = 'csrfmiddlewaretoken';
                     csrfInput.value = "{{ csrf_token }}";
                     resetForm.appendChild(csrfInput);
-                    
+
                     const recruiterIdInput = document.createElement('input');
                     recruiterIdInput.type = 'hidden';
                     recruiterIdInput.name = 'recruiter_id';
                     recruiterIdInput.value = recruiter.id;
                     resetForm.appendChild(recruiterIdInput);
-                    
+
+                    // Add job fair ID to the form
+                    const jobFairIdInput = document.createElement('input');
+                    jobFairIdInput.type = 'hidden';
+                    jobFairIdInput.name = 'job_fair_id';
+                    jobFairIdInput.value = jobFairId;  // This is available from the outer scope
+                    resetForm.appendChild(jobFairIdInput);
+
                     const resetButton = document.createElement('button');
                     resetButton.className = 'btn btn-sm btn-outline-secondary';
                     resetButton.textContent = 'RESET';
                     resetForm.appendChild(resetButton);
-                    
+
                     resetCell.appendChild(resetForm);
                     row.appendChild(resetCell);
                     

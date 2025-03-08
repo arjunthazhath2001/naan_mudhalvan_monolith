@@ -193,6 +193,7 @@ def get_recruiters_for_job_fair(request, job_fair_id):
 def reset_recruiter_password(request):
     if request.method == "POST":
         recruiter_id = request.POST.get('recruiter_id')
+        job_fair_id = request.POST.get('job_fair_id')  # Add this to get the job fair ID
         
         # Generate a new random password
         new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
@@ -202,6 +203,7 @@ def reset_recruiter_password(request):
         recruiter.recruiter_password = new_password
         recruiter.save()
         
-        return redirect('companies')
+        # Redirect with the job fair ID to maintain selection
+        return redirect(f'/nm/pteam/companies?job_fair_id={job_fair_id}')
     
     return redirect('companies')
