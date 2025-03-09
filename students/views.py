@@ -8,7 +8,6 @@ from django.db import IntegrityError
 
 
 
-
 def register_for_job_fair(request, job_fair_id):
     if request.method == 'POST':
         form = StudentRegistrationForm(request.POST, request.FILES)
@@ -21,10 +20,13 @@ def register_for_job_fair(request, job_fair_id):
             ).first()
             
             if existing_registration:
-                # If already registered, store registration number in session and redirect
-                request.session['student_registration_number'] = registration_number
-                messages.info(request, 'You are already registered for this job fair.')
-                return redirect('registration_success')
+                # If already registered, add error message to the form
+                form.add_error('registration_number', 'This registration number has already been registered for this job fair.')
+                # Return the form with the error message
+                return render(request, 'students_app/registration_form.html', {
+                    'form': form,
+                    'job_fair_id': job_fair_id
+                })
             
             try:
                 # Create but don't save the form instance yet
@@ -41,9 +43,11 @@ def register_for_job_fair(request, job_fair_id):
                 return redirect('registration_success')
             except IntegrityError:
                 # This is a fallback in case of race conditions
-                messages.warning(request, 'You seem to be already registered for this job fair.')
-                request.session['student_registration_number'] = registration_number
-                return redirect('registration_success')
+                form.add_error('registration_number', 'This registration number has already been registered for this job fair.')
+                return render(request, 'students_app/registration_form.html', {
+                    'form': form,
+                    'job_fair_id': job_fair_id
+                })
     else:
         form = StudentRegistrationForm()
     
@@ -51,7 +55,6 @@ def register_for_job_fair(request, job_fair_id):
         'form': form,
         'job_fair_id': job_fair_id
     })
-
 
 
 
