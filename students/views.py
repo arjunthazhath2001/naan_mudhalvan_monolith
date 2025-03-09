@@ -4,26 +4,46 @@ from .forms import StudentRegistrationForm
 from .models import StudentRegistration
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db import IntegrityError
 
 
-# Update the register_for_job_fair view in students/views.py
+
 
 def register_for_job_fair(request, job_fair_id):
     if request.method == 'POST':
         form = StudentRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
-            # Create but don't save the form instance yet
-            student_registration = form.save(commit=False)
-            # Add the job_fair_id
-            student_registration.job_fair_id = job_fair_id
-            # Now save the instance
-            student_registration.save()
+            # Check if student is already registered
+            registration_number = form.cleaned_data['registration_number']
+            existing_registration = StudentRegistration.objects.filter(
+                job_fair_id=job_fair_id,
+                registration_number=registration_number
+            ).first()
             
-            # Store student registration number in session
-            request.session['student_registration_number'] = student_registration.registration_number
+            if existing_registration:
+                # If already registered, store registration number in session and redirect
+                request.session['student_registration_number'] = registration_number
+                messages.info(request, 'You are already registered for this job fair.')
+                return redirect('registration_success')
             
-            messages.success(request, 'Registration successful! Thank you for registering for the job fair.')
-            return redirect('registration_success')
+            try:
+                # Create but don't save the form instance yet
+                student_registration = form.save(commit=False)
+                # Add the job_fair_id
+                student_registration.job_fair_id = job_fair_id
+                # Now save the instance
+                student_registration.save()
+                
+                # Store student registration number in session
+                request.session['student_registration_number'] = student_registration.registration_number
+                
+                messages.success(request, 'Registration successful! Thank you for registering for the job fair.')
+                return redirect('registration_success')
+            except IntegrityError:
+                # This is a fallback in case of race conditions
+                messages.warning(request, 'You seem to be already registered for this job fair.')
+                request.session['student_registration_number'] = registration_number
+                return redirect('registration_success')
     else:
         form = StudentRegistrationForm()
     
@@ -31,7 +51,6 @@ def register_for_job_fair(request, job_fair_id):
         'form': form,
         'job_fair_id': job_fair_id
     })
-
 
 
 
@@ -49,7 +68,6 @@ def mark_recruiter_attendance(request, job_fair_id, recruiter_id):
         message = "Please register for the job fair first!"
         return render(request, 'students_app/attendance_marked.html', {'message': message})
 
-    
     # Check if the student is registered for this job fair
     student_registration = StudentRegistration.objects.filter(
         job_fair_id=job_fair_id, 
@@ -57,7 +75,8 @@ def mark_recruiter_attendance(request, job_fair_id, recruiter_id):
     ).first()
     
     if not student_registration:
-        return HttpResponse("You are not registered for this job fair!", status=403)
+        message = "You are not registered for this job fair!"
+        return render(request, 'students_app/attendance_marked.html', {'message': message})
     
     # Record the attendance
     from .models import RecruiterStudentAttendance
@@ -69,6 +88,8 @@ def mark_recruiter_attendance(request, job_fair_id, recruiter_id):
     )
     
     if created:
-        return HttpResponse("Attendance marked successfully!")
+        message = "Attendance marked successfully!"
     else:
-        return HttpResponse("You've already visited this recruiter!")
+        message = "You've already visited this recruiter!"
+    
+    return render(request, 'students_app/attendance_marked.html', {'message': message})

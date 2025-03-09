@@ -34,14 +34,41 @@
         }
 
         .confirmation-icon {
-            color: #4CAF50;
             font-size: 3em;
             margin: 20px 0;
+        }
+
+        .confirmation-icon.success {
+            color: #4CAF50;
+        }
+
+        .confirmation-icon.info {
+            color: #2196F3;
+        }
+
+        .confirmation-icon.warning {
+            color: #FF9800;
         }
 
         .confirmation-message {
             margin: 20px 0;
             font-size: 1.2em;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: black;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 1em;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .back-btn:hover {
+            background-color: #333;
         }
     </style>
 </head>
@@ -51,11 +78,27 @@
             Naan Mudhalvan
         </div>
 
-        <div class="confirmation-icon">✓</div>
+        {% if "successfully" in message %}
+            <div class="confirmation-icon success">✓</div>
+        {% elif "already" in message %}
+            <div class="confirmation-icon info">ℹ</div>
+        {% else %}
+            <div class="confirmation-icon warning">!</div>
+        {% endif %}
 
         <div class="confirmation-message">
             <h2>{{ message }}</h2>
+            
+            {% if "successfully" in message %}
+                <p>Thank you for visiting this recruiter. Good luck with your job search!</p>
+            {% elif "already" in message %}
+                <p>You have already recorded your visit to this recruiter.</p>
+            {% elif "register" in message %}
+                <p>Please scan the job fair QR code to register first.</p>
+            {% endif %}
         </div>
+
+        <a href="https://naanmudhalvan.tn.gov.in/" class="back-btn">Back to Home</a>
     </div>
 </body>
 </html>
