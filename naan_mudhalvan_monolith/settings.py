@@ -39,6 +39,7 @@ INSTALLED_APPS = [
      "placement_team",
     "students",
     "recruiters",
+    "channels"
 ]
 
 MIDDLEWARE = [
@@ -70,6 +71,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "naan_mudhalvan_monolith.wsgi.application"
+
+ASGI_APPLICATION = "naan_mudhalvan_monolith.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    },
+}
 
 
 # Database

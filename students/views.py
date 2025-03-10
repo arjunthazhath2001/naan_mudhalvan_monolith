@@ -6,6 +6,12 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import IntegrityError
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+import json
+from django.utils import timezone
+
+
 
 
 def register_for_job_fair(request, job_fair_id):
@@ -62,6 +68,8 @@ def registration_success(request):
     return render(request, 'students_app/registration_success.html')
 
 
+
+
 @csrf_exempt
 def mark_recruiter_attendance(request, job_fair_id, recruiter_id):
     # Get the student registration number from the session
@@ -90,7 +98,33 @@ def mark_recruiter_attendance(request, job_fair_id, recruiter_id):
         student_registration_number=student_reg_number
     )
     
+    # If this is a new attendance, send WebSocket notification
     if created:
+        # Get student details
+        student_data = {
+            'registration_number': student_registration.registration_number,
+            'name': student_registration.name,
+            'college_name': student_registration.college_name,
+            'has_resume': bool(student_registration.resume),
+            'resume_url': student_registration.resume.url if student_registration.resume else None,
+        }
+        
+        # Format timestamp
+        timestamp = timezone.localtime(attendance.timestamp).strftime("%b %d, %Y, %I:%M %p")
+        
+        # Send notification to channel
+        channel_layer = get_channel_layer()
+        room_group_name = f'recruiter_{recruiter_id}_jobfair_{job_fair_id}'
+        
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'new_attendance',
+                'student': student_data,
+                'timestamp': timestamp,
+            }
+        )
+        
         message = "Attendance marked successfully!"
     else:
         message = "You've already visited this recruiter!"

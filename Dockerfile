@@ -13,5 +13,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
-# Run the application
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Replace the CMD line
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "naan_mudhalvan_monolith.asgi:application"]
