@@ -59,6 +59,10 @@
             max-width: 200px;
             margin-bottom: 10px;
         }
+        
+        .job-fair-selector {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -73,25 +77,41 @@
             Welcome, {{ recruiter_email }}
         </div>
 
-        <!-- QR Code Section (if available) -->
-        {% if qr_code_url %}
-        <div class="qr-code-container text-center">
-            <h4>Your Company Attendance QR Code</h4>
-            <p class="text-muted">Students can scan this to mark their attendance at your booth</p>
-            <img src="{{ qr_code_url }}" alt="QR Code" class="img-fluid">
-            <a href="{{ qr_code_url }}" download="recruiter_qr.png" class="btn btn-sm btn-outline-secondary mt-2">Download QR Code</a>
+        <!-- Job Fair Selector -->
+        {% if job_fairs|length > 1 %}
+        <div class="job-fair-selector">
+            <label for="job-fair-select" class="form-label">Select Job Fair:</label>
+            <select id="job-fair-select" class="form-select">
+                {% for fair in job_fairs %}
+                <option value="{{ fair.id }}" {% if selected_job_fair.job_fair_id == fair.id %}selected{% endif %}>
+                    {{ fair.district }} - {{ fair.date|date:"F d, Y" }}
+                </option>
+                {% endfor %}
+            </select>
         </div>
         {% endif %}
+
+        <!-- QR Code Section (if available) -->
+        <div id="qr-code-container" class="qr-code-container text-center">
+            {% if qr_code_url %}
+            <h4>Your Company Attendance QR Code</h4>
+            <p class="text-muted">Students can scan this to mark their attendance at your booth</p>
+            <img src="{{ qr_code_url }}" alt="QR Code" class="img-fluid" id="qr-code-image">
+            <a href="{{ qr_code_url }}" download="recruiter_qr.png" class="btn btn-sm btn-outline-secondary mt-2" id="qr-download-link">Download QR Code</a>
+            {% else %}
+            <p class="text-center text-muted">No QR code available for this job fair.</p>
+            {% endif %}
+        </div>
 
         <!-- Job Fair Info -->
         <div class="card mb-4">
             <div class="card-header bg-dark text-white">
                 <h5 class="mb-0">Job Fair Details</h5>
             </div>
-            <div class="card-body">
-                {% if job_fair %}
-                <p><strong>District:</strong> {{ job_fair.district }}</p>
-                <p><strong>Date:</strong> {{ job_fair.date_of_job_fair }}</p>
+            <div class="card-body" id="job-fair-details">
+                {% if selected_job_fair %}
+                <p><strong>District:</strong> <span id="job-fair-district">{{ selected_job_fair.district }}</span></p>
+                <p><strong>Date:</strong> <span id="job-fair-date">{{ selected_job_fair.date_of_job_fair }}</span></p>
                 {% else %}
                 <p class="text-center text-muted">You are not currently assigned to any job fair.</p>
                 {% endif %}
@@ -103,7 +123,7 @@
             <div class="card-header bg-dark text-white">
                 <h5 class="mb-0">Student Attendance</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body" id="attendance-container">
                 {% if attendances %}
                 <div class="table-responsive">
                     <table class="table table-striped">
@@ -116,7 +136,7 @@
                                 <th>Timestamp</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="attendance-table-body">
                             {% for attendance in attendances %}
                             <tr>
                                 <td>{{ attendance.student.registration_number }}</td>
@@ -136,7 +156,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-center text-muted">No students have visited your booth yet.</p>
+                <p class="text-center text-muted" id="no-attendance-message">No students have visited your booth yet.</p>
                 {% endif %}
             </div>
         </div>
@@ -150,98 +170,237 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- WebSocket for Real-time Updates -->
+    <!-- Job Fair Selection & WebSocket Logic -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Only connect if we have job fair and recruiter data
-            {% if job_fair and recruiter_id %}
-                
-                // Create WebSocket connection
-                const socket = new WebSocket(
-                    'ws://' + window.location.host + 
-                    '/ws/recruiter/{{ recruiter_id }}/{{ job_fair.job_fair_id }}/'
-                );
-                
-                // Connection opened
-                socket.addEventListener('open', function(event) {
-                    console.log('WebSocket connection established');
-                });
-                
-                // Listen for messages
-                socket.addEventListener('message', function(event) {
-                    const data = JSON.parse(event.data);
-                    console.log('Message from server:', data);
-                    
-                    if (data.type === 'new_attendance') {
-                        // Get the table body
-                        const tableBody = document.querySelector('.table-responsive tbody');
-                        const noAttendanceMsg = document.querySelector('.card-body .text-center.text-muted');
+            // Job Fair dropdown change handler
+            const jobFairSelect = document.getElementById('job-fair-select');
+            if (jobFairSelect) {
+                jobFairSelect.addEventListener('change', function() {
+                    const selectedJobFairId = this.value;
+                    if (selectedJobFairId) {
+                        // Update URL parameter without page reload
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('job_fair_id', selectedJobFairId);
+                        window.history.pushState({}, '', url);
                         
-                        // If there was a "no students" message, remove it
-                        if (noAttendanceMsg) {
-                            noAttendanceMsg.remove();
-                            
-                            // Create table if it doesn't exist
-                            if (!tableBody) {
-                                const tableHtml = `
-                                <div class="table-responsive">
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Registration Number</th>
-                                                <th>Name</th>
-                                                <th>College</th>
-                                                <th>Resume</th>
-                                                <th>Timestamp</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
-                                </div>`;
-                                
-                                document.querySelector('.card-body').innerHTML = tableHtml;
-                            }
-                        }
-                        
-                        // Create a new row
-                        const newRow = document.createElement('tr');
-                        newRow.innerHTML = `
-                            <td>${data.student.registration_number}</td>
-                            <td>${data.student.name}</td>
-                            <td>${data.student.college_name}</td>
-                            <td>${data.student.has_resume ? 
-                                 `<a href="${data.student.resume_url}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>` : 
-                                 'N/A'}</td>
-                            <td>${data.timestamp}</td>
-                        `;
-                        
-                        // Add the new row to the table
-                        document.querySelector('.table-responsive tbody').prepend(newRow);
-                        
-                        // Flash effect for the new row
-                        newRow.style.backgroundColor = '#e3f2fd';
-                        setTimeout(function() {
-                            newRow.style.transition = 'background-color 1s ease';
-                            newRow.style.backgroundColor = '';
-                        }, 100);
+                        // Load the attendance data for the selected job fair
+                        loadJobFairData(selectedJobFairId);
                     }
                 });
+            }
+            
+            // Function to load job fair data
+            function loadJobFairData(jobFairId) {
+                // Show loading indicator
+                const attendanceContainer = document.getElementById('attendance-container');
+                attendanceContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
                 
-                // Connection closed
-                socket.addEventListener('close', function(event) {
-                    console.log('WebSocket connection closed');
-                    // Try to reconnect after a few seconds
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 5000);
-                });
+                // Get QR code data from our job fairs array
+                const jobFairData = findJobFairById(jobFairId);
+                if (jobFairData) {
+                    updateQrCode(jobFairData.qr_code_url);
+                    updateJobFairDetails(jobFairData);
+                }
                 
-                // Connection error
-                socket.addEventListener('error', function(event) {
-                    console.error('WebSocket error:', event);
-                });
+                // Instead of using AJAX, let's redirect to the page with the new job fair ID
+                // This ensures we use the server-side logic that's already working
+                window.location.href = `/nm/recruiters/dashboard/?job_fair_id=${jobFairId}`;
+
+            }
+            
+            // Find job fair data by ID
+            function findJobFairById(jobFairId) {
+                const allJobFairs = [
+                    {% for fair in job_fairs %}
+                    {
+                        id: {{ fair.id }},
+                        district: "{{ fair.district }}",
+                        date: "{{ fair.date|date:'F d, Y' }}",
+                        qr_code_url: "{{ fair.qr_code_url|default:'' }}"
+                    },
+                    {% endfor %}
+                ];
                 
+                return allJobFairs.find(fair => fair.id == jobFairId);
+            }
+            
+            // Update QR code
+            function updateQrCode(qrCodeUrl) {
+                const qrContainer = document.getElementById('qr-code-container');
+                
+                if (qrCodeUrl && qrCodeUrl !== "None" && qrCodeUrl !== "") {
+                    qrContainer.innerHTML = `
+                        <h4>Your Company Attendance QR Code</h4>
+                        <p class="text-muted">Students can scan this to mark their attendance at your booth</p>
+                        <img src="${qrCodeUrl}" alt="QR Code" class="img-fluid">
+                        <a href="${qrCodeUrl}" download="recruiter_qr.png" class="btn btn-sm btn-outline-secondary mt-2">Download QR Code</a>
+                    `;
+                } else {
+                    qrContainer.innerHTML = '<p class="text-center text-muted">No QR code available for this job fair.</p>';
+                }
+            }
+            
+            // Update job fair details
+            function updateJobFairDetails(jobFair) {
+                const detailsContainer = document.getElementById('job-fair-details');
+                
+                if (jobFair) {
+                    detailsContainer.innerHTML = `
+                        <p><strong>District:</strong> ${jobFair.district}</p>
+                        <p><strong>Date:</strong> ${jobFair.date}</p>
+                    `;
+                } else {
+                    detailsContainer.innerHTML = '<p class="text-center text-muted">Job fair details not available.</p>';
+                }
+            }
+            
+            // Update attendance table
+            function updateAttendanceTable(attendances) {
+                const attendanceContainer = document.getElementById('attendance-container');
+                
+                if (attendances && attendances.length > 0) {
+                    let tableHtml = `
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Registration Number</th>
+                                        <th>Name</th>
+                                        <th>College</th>
+                                        <th>Resume</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendance-table-body">
+                    `;
+                    
+                    attendances.forEach(attendance => {
+                        tableHtml += `
+                            <tr>
+                                <td>${attendance.registration_number}</td>
+                                <td>${attendance.name}</td>
+                                <td>${attendance.college_name}</td>
+                                <td>
+                                    ${attendance.has_resume 
+                                      ? `<a href="${attendance.resume_url}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>` 
+                                      : 'N/A'}
+                                </td>
+                                <td>${attendance.timestamp}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    tableHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    
+                    attendanceContainer.innerHTML = tableHtml;
+                } else {
+                    attendanceContainer.innerHTML = '<p class="text-center text-muted">No students have visited your booth at this job fair yet.</p>';
+                }
+            }
+            
+            // WebSocket setup
+            function setupWebSocket(jobFairId) {
+                // Only connect if we have recruiter ID
+                {% if recruiter_id %}
+                    // Create WebSocket connection
+                    window.socket = new WebSocket(
+                        'ws://' + window.location.host + 
+                        '/ws/recruiter/{{ recruiter_id }}/' + jobFairId + '/'
+                    );
+                    
+                    // Connection opened
+                    window.socket.addEventListener('open', function(event) {
+                        console.log('WebSocket connection established');
+                    });
+                    
+                    // Listen for messages
+                    window.socket.addEventListener('message', function(event) {
+                        const data = JSON.parse(event.data);
+                        console.log('Message from server:', data);
+                        
+                        if (data.type === 'new_attendance') {
+                            // Handle new attendance notification
+                            handleNewAttendance(data);
+                        }
+                    });
+                    
+                    // Connection closed
+                    window.socket.addEventListener('close', function(event) {
+                        console.log('WebSocket connection closed');
+                        // Try to reconnect after a few seconds
+                        setTimeout(function() {
+                            setupWebSocket(jobFairId);
+                        }, 5000);
+                    });
+                    
+                    // Connection error
+                    window.socket.addEventListener('error', function(event) {
+                        console.error('WebSocket error:', event);
+                    });
+                {% endif %}
+            }
+            
+            // Handle new attendance notification
+            function handleNewAttendance(data) {
+                const tableBody = document.querySelector('#attendance-table-body');
+                const noAttendanceMsg = document.querySelector('#no-attendance-message');
+                
+                // If there was a "no students" message, remove it and create table
+                if (noAttendanceMsg) {
+                    const attendanceContainer = document.getElementById('attendance-container');
+                    attendanceContainer.innerHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Registration Number</th>
+                                        <th>Name</th>
+                                        <th>College</th>
+                                        <th>Resume</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendance-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+                
+                // Get the table body again in case it was just created
+                const updatedTableBody = document.querySelector('#attendance-table-body');
+                
+                // Create a new row
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td>${data.student.registration_number}</td>
+                    <td>${data.student.name}</td>
+                    <td>${data.student.college_name}</td>
+                    <td>${data.student.has_resume ? 
+                         `<a href="${data.student.resume_url}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>` : 
+                         'N/A'}</td>
+                    <td>${data.timestamp}</td>
+                `;
+                
+                // Add the new row to the table
+                updatedTableBody.prepend(newRow);
+                
+                // Flash effect for the new row
+                newRow.style.backgroundColor = '#e3f2fd';
+                setTimeout(function() {
+                    newRow.style.transition = 'background-color 1s ease';
+                    newRow.style.backgroundColor = '';
+                }, 100);
+            }
+            
+            // Set up initial WebSocket connection for the current job fair
+            {% if selected_job_fair %}
+                setupWebSocket({{ selected_job_fair.job_fair_id }});
             {% endif %}
         });
     </script>
