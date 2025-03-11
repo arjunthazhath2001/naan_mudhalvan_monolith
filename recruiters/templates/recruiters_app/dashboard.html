@@ -9,32 +9,46 @@
     <style>
         body {
             background-color: rgb(36, 36, 36);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            padding: 0;
+            margin: 0;
             font-family: Arial, sans-serif;
+            min-height: 100vh;
         }
 
         .dashboard-container {
             background-color: #fff;
-            padding: 25px;
             border-radius: 15px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
             width: 100%;
+            max-width: 100%;
+            margin: 15px auto;
+            padding: 15px;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            
+            .dashboard-container {
+                max-width: 800px;
+                padding: 25px;
+                margin: 0 auto;
+            }
         }
 
         .dashboard-logo {
-            margin: 20px 0;
-            font-size: 2.5em;
+            margin: 15px 0;
+            font-size: 2em;
             font-weight: bold;
             text-align: center;
         }
 
         .dashboard-header {
-            margin: 20px 0;
-            font-size: 1.5em;
+            margin: 15px 0;
+            font-size: 1.2em;
             font-weight: bold;
             text-align: center;
         }
@@ -48,6 +62,22 @@
             max-width: 100%;
         }
 
+        /* Smaller table text on mobile */
+        .table {
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 576px) {
+            .table {
+                font-size: 0.8rem;
+            }
+            
+            .btn-sm {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.75rem;
+            }
+        }
+
         .qr-code-container {
             display: flex;
             flex-direction: column;
@@ -56,12 +86,57 @@
         }
 
         .qr-code-container img {
-            max-width: 200px;
+            max-width: 180px;
             margin-bottom: 10px;
         }
         
         .job-fair-selector {
             margin-bottom: 20px;
+        }
+        
+        /* Card styles */
+        .card {
+            margin-bottom: 15px;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            padding: 0.75rem 1rem;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        /* Center the logout button */
+        .logout-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        /* Make the table fit better on mobile */
+        .mobile-table th, .mobile-table td {
+            white-space: nowrap;
+            padding: 0.5rem;
+        }
+        
+        /* Custom classes for responsive columns */
+        .col-name {
+            min-width: 100px;
+        }
+        
+        .col-college {
+            min-width: 120px;
+        }
+        
+        /* Optimize timestamp display for mobile */
+        @media (max-width: 576px) {
+            .table th, .table td {
+                padding: 0.4rem 0.3rem;
+            }
         }
     </style>
 </head>
@@ -84,7 +159,7 @@
             <select id="job-fair-select" class="form-select">
                 {% for fair in job_fairs %}
                 <option value="{{ fair.id }}" {% if selected_job_fair.job_fair_id == fair.id %}selected{% endif %}>
-                    {{ fair.district }} - {{ fair.date|date:"F d, Y" }}
+                    {{ fair.district }} - {{ fair.date|date:"d M, Y" }}
                 </option>
                 {% endfor %}
             </select>
@@ -94,8 +169,8 @@
         <!-- QR Code Section (if available) -->
         <div id="qr-code-container" class="qr-code-container text-center">
             {% if qr_code_url %}
-            <h4>Your Company Attendance QR Code</h4>
-            <p class="text-muted">Students can scan this to mark their attendance at your booth</p>
+            <h4 class="fs-5">Your Company Attendance QR Code</h4>
+            <p class="text-muted small">Students scan this to record attendance</p>
             <img src="{{ qr_code_url }}" alt="QR Code" class="img-fluid" id="qr-code-image">
             <a href="{{ qr_code_url }}" download="recruiter_qr.png" class="btn btn-sm btn-outline-secondary mt-2" id="qr-download-link">Download QR Code</a>
             {% else %}
@@ -104,14 +179,20 @@
         </div>
 
         <!-- Job Fair Info -->
-        <div class="card mb-4">
+        <div class="card mb-3">
             <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Job Fair Details</h5>
+                <h5 class="mb-0 fs-6">Job Fair Details</h5>
             </div>
             <div class="card-body" id="job-fair-details">
                 {% if selected_job_fair %}
-                <p><strong>District:</strong> <span id="job-fair-district">{{ selected_job_fair.district }}</span></p>
-                <p><strong>Date:</strong> <span id="job-fair-date">{{ selected_job_fair.date_of_job_fair }}</span></p>
+                <div class="row">
+                    <div class="col-5"><strong>District:</strong></div>
+                    <div class="col-7"><span id="job-fair-district">{{ selected_job_fair.district }}</span></div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-5"><strong>Date:</strong></div>
+                    <div class="col-7"><span id="job-fair-date">{{ selected_job_fair.date_of_job_fair }}</span></div>
+                </div>
                 {% else %}
                 <p class="text-center text-muted">You are not currently assigned to any job fair.</p>
                 {% endif %}
@@ -121,19 +202,19 @@
         <!-- Student Attendance -->
         <div class="card">
             <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Student Attendance</h5>
+                <h5 class="mb-0 fs-6">Student Attendance</h5>
             </div>
-            <div class="card-body" id="attendance-container">
+            <div class="card-body p-0" id="attendance-container">
                 {% if attendances %}
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-striped table-sm mobile-table mb-0">
                         <thead>
                             <tr>
-                                <th>Registration Number</th>
-                                <th>Name</th>
-                                <th>College</th>
+                                <th>Reg #</th>
+                                <th class="col-name">Name</th>
+                                <th class="col-college">College</th>
+                                <th>Time</th>
                                 <th>Resume</th>
-                                <th>Timestamp</th>
                             </tr>
                         </thead>
                         <tbody id="attendance-table-body">
@@ -142,27 +223,27 @@
                                 <td>{{ attendance.student.registration_number }}</td>
                                 <td>{{ attendance.student.name }}</td>
                                 <td>{{ attendance.student.college_name }}</td>
-                                <td>
+                                <td>{{ attendance.timestamp|date:"g:i A" }}</td>
+                                <td class="text-center">
                                     {% if attendance.student.resume %}
                                     <a href="{{ attendance.student.resume.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
                                     {% else %}
-                                    N/A
+                                    -
                                     {% endif %}
                                 </td>
-                                <td>{{ attendance.timestamp }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 {% else %}
-                <p class="text-center text-muted" id="no-attendance-message">No students have visited your booth yet.</p>
+                <p class="text-center text-muted p-3" id="no-attendance-message">No students have visited your booth yet.</p>
                 {% endif %}
             </div>
         </div>
         
         <!-- Logout Button -->
-        <div class="text-center mt-4">
+        <div class="logout-container">
             <a href="{% url 'recruiter_logout' %}" class="btn btn-outline-danger">Logout</a>
         </div>
     </div>
@@ -170,7 +251,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Job Fair Selection & WebSocket Logic -->
+    <!-- Job Fair Selection Logic -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Job Fair dropdown change handler
@@ -179,138 +260,22 @@
                 jobFairSelect.addEventListener('change', function() {
                     const selectedJobFairId = this.value;
                     if (selectedJobFairId) {
-                        // Update URL parameter without page reload
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('job_fair_id', selectedJobFairId);
-                        window.history.pushState({}, '', url);
-                        
-                        // Load the attendance data for the selected job fair
-                        loadJobFairData(selectedJobFairId);
+                        // Redirect to the page with the new job fair ID
+                        window.location.href = `/nm/recruiters/dashboard/?job_fair_id=${selectedJobFairId}`;
                     }
                 });
             }
             
-            // Function to load job fair data
-            function loadJobFairData(jobFairId) {
-                // Show loading indicator
-                const attendanceContainer = document.getElementById('attendance-container');
-                attendanceContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-                
-                // Get QR code data from our job fairs array
-                const jobFairData = findJobFairById(jobFairId);
-                if (jobFairData) {
-                    updateQrCode(jobFairData.qr_code_url);
-                    updateJobFairDetails(jobFairData);
-                }
-                
-                // Instead of using AJAX, let's redirect to the page with the new job fair ID
-                // This ensures we use the server-side logic that's already working
-                window.location.href = `/nm/recruiters/dashboard/?job_fair_id=${jobFairId}`;
-
-            }
+            // WebSocket setup for real-time updates
+            setupWebSocket();
             
-            // Find job fair data by ID
-            function findJobFairById(jobFairId) {
-                const allJobFairs = [
-                    {% for fair in job_fairs %}
-                    {
-                        id: {{ fair.id }},
-                        district: "{{ fair.district }}",
-                        date: "{{ fair.date|date:'F d, Y' }}",
-                        qr_code_url: "{{ fair.qr_code_url|default:'' }}"
-                    },
-                    {% endfor %}
-                ];
-                
-                return allJobFairs.find(fair => fair.id == jobFairId);
-            }
-            
-            // Update QR code
-            function updateQrCode(qrCodeUrl) {
-                const qrContainer = document.getElementById('qr-code-container');
-                
-                if (qrCodeUrl && qrCodeUrl !== "None" && qrCodeUrl !== "") {
-                    qrContainer.innerHTML = `
-                        <h4>Your Company Attendance QR Code</h4>
-                        <p class="text-muted">Students can scan this to mark their attendance at your booth</p>
-                        <img src="${qrCodeUrl}" alt="QR Code" class="img-fluid">
-                        <a href="${qrCodeUrl}" download="recruiter_qr.png" class="btn btn-sm btn-outline-secondary mt-2">Download QR Code</a>
-                    `;
-                } else {
-                    qrContainer.innerHTML = '<p class="text-center text-muted">No QR code available for this job fair.</p>';
-                }
-            }
-            
-            // Update job fair details
-            function updateJobFairDetails(jobFair) {
-                const detailsContainer = document.getElementById('job-fair-details');
-                
-                if (jobFair) {
-                    detailsContainer.innerHTML = `
-                        <p><strong>District:</strong> ${jobFair.district}</p>
-                        <p><strong>Date:</strong> ${jobFair.date}</p>
-                    `;
-                } else {
-                    detailsContainer.innerHTML = '<p class="text-center text-muted">Job fair details not available.</p>';
-                }
-            }
-            
-            // Update attendance table
-            function updateAttendanceTable(attendances) {
-                const attendanceContainer = document.getElementById('attendance-container');
-                
-                if (attendances && attendances.length > 0) {
-                    let tableHtml = `
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Registration Number</th>
-                                        <th>Name</th>
-                                        <th>College</th>
-                                        <th>Resume</th>
-                                        <th>Timestamp</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="attendance-table-body">
-                    `;
-                    
-                    attendances.forEach(attendance => {
-                        tableHtml += `
-                            <tr>
-                                <td>${attendance.registration_number}</td>
-                                <td>${attendance.name}</td>
-                                <td>${attendance.college_name}</td>
-                                <td>
-                                    ${attendance.has_resume 
-                                      ? `<a href="${attendance.resume_url}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>` 
-                                      : 'N/A'}
-                                </td>
-                                <td>${attendance.timestamp}</td>
-                            </tr>
-                        `;
-                    });
-                    
-                    tableHtml += `
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                    
-                    attendanceContainer.innerHTML = tableHtml;
-                } else {
-                    attendanceContainer.innerHTML = '<p class="text-center text-muted">No students have visited your booth at this job fair yet.</p>';
-                }
-            }
-            
-            // WebSocket setup
-            function setupWebSocket(jobFairId) {
-                // Only connect if we have recruiter ID
-                {% if recruiter_id %}
+            function setupWebSocket() {
+                // Only connect if we have recruiter ID and job fair ID
+                {% if recruiter_id and selected_job_fair %}
                     // Create WebSocket connection
                     window.socket = new WebSocket(
                         'ws://' + window.location.host + 
-                        '/ws/recruiter/{{ recruiter_id }}/' + jobFairId + '/'
+                        '/ws/recruiter/{{ recruiter_id }}/{{ selected_job_fair.job_fair_id }}/'
                     );
                     
                     // Connection opened
@@ -334,7 +299,7 @@
                         console.log('WebSocket connection closed');
                         // Try to reconnect after a few seconds
                         setTimeout(function() {
-                            setupWebSocket(jobFairId);
+                            setupWebSocket();
                         }, 5000);
                     });
                     
@@ -355,14 +320,14 @@
                     const attendanceContainer = document.getElementById('attendance-container');
                     attendanceContainer.innerHTML = `
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table table-striped table-sm mobile-table mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Registration Number</th>
-                                        <th>Name</th>
-                                        <th>College</th>
+                                        <th>Reg #</th>
+                                        <th class="col-name">Name</th>
+                                        <th class="col-college">College</th>
+                                        <th>Time</th>
                                         <th>Resume</th>
-                                        <th>Timestamp</th>
                                     </tr>
                                 </thead>
                                 <tbody id="attendance-table-body">
@@ -381,14 +346,14 @@
                     <td>${data.student.registration_number}</td>
                     <td>${data.student.name}</td>
                     <td>${data.student.college_name}</td>
-                    <td>${data.student.has_resume ? 
-                         `<a href="${data.student.resume_url}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>` : 
-                         'N/A'}</td>
                     <td>${data.timestamp}</td>
+                    <td class="text-center">${data.student.has_resume ? 
+                         `<a href="${data.student.resume_url}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>` : 
+                         '-'}</td>
                 `;
                 
                 // Add the new row to the table
-                updatedTableBody.prepend(newRow);
+                updatedTableBody.insertBefore(newRow, updatedTableBody.firstChild);
                 
                 // Flash effect for the new row
                 newRow.style.backgroundColor = '#e3f2fd';
@@ -397,11 +362,6 @@
                     newRow.style.backgroundColor = '';
                 }, 100);
             }
-            
-            // Set up initial WebSocket connection for the current job fair
-            {% if selected_job_fair %}
-                setupWebSocket({{ selected_job_fair.job_fair_id }});
-            {% endif %}
         });
     </script>
 </body>

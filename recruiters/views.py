@@ -4,6 +4,8 @@ from .models import Recruiter
 from placement_team.models import RecruiterJobFair, Job_fairs
 from students.models import RecruiterStudentAttendance, StudentRegistration
 from django.http import JsonResponse
+from django.utils import timezone
+
 
 def recruiter_login(request):
     if 'recruiter_id' in request.session:
@@ -36,7 +38,7 @@ def recruiter_dashboard(request):
     try:
         recruiter = Recruiter.objects.get(recruiter_id=recruiter_id)
         
-        # Get only the job fairs this recruiter has attended through RecruiterJobFair
+        # Get the recruiter's job fairs
         recruiter_job_fairs = RecruiterJobFair.objects.filter(recruiter=recruiter)
         
         # If no job fairs found, render with empty data
@@ -73,10 +75,11 @@ def recruiter_dashboard(request):
         qr_code_url = selected_rjf.qr_code.url if selected_rjf.qr_code else None
         
         # Get student attendances for this recruiter at the selected job fair
+        # ORDER BY timestamp DESC to show most recent first
         attendance_records = RecruiterStudentAttendance.objects.filter(
             recruiter_id=recruiter_id, 
             job_fair_id=selected_job_fair.job_fair_id
-        )
+        ).order_by('-timestamp')  # This is the important change - ordering by most recent first
         
         # Enhance attendance records with student details
         attendances = []
@@ -118,6 +121,7 @@ def recruiter_dashboard(request):
         del request.session['recruiter_id']
         del request.session['recruiter_email']
         return redirect('recruiter_login')
+    
 
 def recruiter_logout(request):
     # Clear session data
@@ -127,7 +131,8 @@ def recruiter_logout(request):
         del request.session['recruiter_email']
     return redirect('recruiter_login')
 
-# Add a new view to fetch attendances for a specific job fair
+
+
 def get_job_fair_attendances(request, job_fair_id):
     if 'recruiter_id' not in request.session:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
@@ -135,10 +140,11 @@ def get_job_fair_attendances(request, job_fair_id):
     recruiter_id = request.session['recruiter_id']
     
     # Get all attendance records for this job fair and recruiter
+    # ORDER BY timestamp DESC to show most recent first
     attendance_records = RecruiterStudentAttendance.objects.filter(
         recruiter_id=recruiter_id,
         job_fair_id=job_fair_id
-    )
+    ).order_by('-timestamp')  # Add ordering here
     
     # Prepare the response data
     attendances_data = []
@@ -155,7 +161,7 @@ def get_job_fair_attendances(request, job_fair_id):
                 'college_name': student.college_name,
                 'has_resume': bool(student.resume),
                 'resume_url': student.resume.url if student.resume else None,
-                'timestamp': record.timestamp.strftime("%b %d, %Y, %I:%M %p")
+                'timestamp': timezone.localtime(record.timestamp).strftime("%I:%M %p")
             })
         except StudentRegistration.DoesNotExist:
             # Skip if student record not found

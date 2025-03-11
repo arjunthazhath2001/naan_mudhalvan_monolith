@@ -72,6 +72,7 @@ def registration_success(request):
 
 @csrf_exempt
 def mark_recruiter_attendance(request, job_fair_id, recruiter_id):
+ 
     # Get the student registration number from the session
     student_reg_number = request.session.get('student_registration_number')
     
