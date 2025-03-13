@@ -134,11 +134,6 @@
             color: #6c757d;
         }
         
-        .round-in-progress {
-            color: #0d6efd;
-            font-weight: bold;
-        }
-        
         .round-passed {
             color: #198754;
             font-weight: bold;
@@ -242,8 +237,6 @@
                                 <td>
                                     {% if attendance.round_1 == 'not_started' %}
                                         <span class="round-not-started">Not Started</span>
-                                    {% elif attendance.round_1 == 'in_progress' %}
-                                        <span class="round-in-progress">In Progress</span>
                                     {% elif attendance.round_1 == 'passed' %}
                                         <span class="round-passed">Passed</span>
                                     {% elif attendance.round_1 == 'failed' %}
@@ -253,8 +246,6 @@
                                 <td>
                                     {% if attendance.round_2 == 'not_started' %}
                                         <span class="round-not-started">Not Started</span>
-                                    {% elif attendance.round_2 == 'in_progress' %}
-                                        <span class="round-in-progress">In Progress</span>
                                     {% elif attendance.round_2 == 'passed' %}
                                         <span class="round-passed">Passed</span>
                                     {% elif attendance.round_2 == 'failed' %}
@@ -264,8 +255,6 @@
                                 <td>
                                     {% if attendance.round_3 == 'not_started' %}
                                         <span class="round-not-started">Not Started</span>
-                                    {% elif attendance.round_3 == 'in_progress' %}
-                                        <span class="round-in-progress">In Progress</span>
                                     {% elif attendance.round_3 == 'passed' %}
                                         <span class="round-passed">Passed</span>
                                     {% elif attendance.round_3 == 'failed' %}

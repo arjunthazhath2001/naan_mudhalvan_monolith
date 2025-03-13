@@ -248,3 +248,52 @@ def update_student_notes(request):
         return JsonResponse({'success': False, 'error': 'Attendance record not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+
+# Add this function to recruiters/views.py
+import json
+
+@csrf_exempt
+@require_POST
+def shortlist_multiple_students(request):
+    if 'recruiter_id' not in request.session:
+        return JsonResponse({'success': False, 'error': 'Not authenticated'}, status=401)
+    
+    recruiter_id = request.session['recruiter_id']
+    job_fair_id = request.POST.get('job_fair_id')
+    reg_numbers_json = request.POST.get('reg_numbers')
+    
+    if not job_fair_id or not reg_numbers_json:
+        return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
+    
+    try:
+        # Parse JSON string to list
+        reg_numbers = json.loads(reg_numbers_json)
+        
+        # Validate input
+        if not isinstance(reg_numbers, list) or len(reg_numbers) == 0:
+            return JsonResponse({'success': False, 'error': 'Invalid registration numbers'}, status=400)
+        
+        # Get all attendance records for these students
+        from students.models import RecruiterStudentAttendance
+        records_to_update = RecruiterStudentAttendance.objects.filter(
+            job_fair_id=job_fair_id,
+            recruiter_id=recruiter_id,
+            student_registration_number__in=reg_numbers,
+            status='pending'  # Only update those that are currently pending
+        )
+        
+        # Update status to 'shortlisted'
+        updated_count = records_to_update.update(status='shortlisted')
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Successfully shortlisted {updated_count} students.',
+            'updated_count': updated_count
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

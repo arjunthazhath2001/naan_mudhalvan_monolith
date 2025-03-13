@@ -37,7 +37,6 @@ class RecruiterStudentAttendance(models.Model):
     
     ROUND_STATUS_CHOICES = (
         ('not_started', 'Not Started'),
-        ('in_progress', 'In Progress'),
         ('passed', 'Passed'),
         ('failed', 'Failed')
     )
