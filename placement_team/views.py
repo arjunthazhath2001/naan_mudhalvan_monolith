@@ -29,14 +29,15 @@ def login_view(request):
     
     return render(request, 'placement_team_app/login.html')
 
-def generate_qr_code_image(request,job_fair_id, district):
+def generate_qr_code_image(job_fair_id, district):
     # Create the QR code with slightly reduced box size to make room for text
     qr = qrcode.QRCode(version=1,
                        error_correction=qrcode.constants.ERROR_CORRECT_L, 
                        box_size=8,  # Reduced from 10 to make room for text
                        border=4)
+    public_url = 'http://13.49.75.11'  # Replace with your EC2 instance's public IP or domain
+    registration_link = f"{public_url}/nm/students/register/{job_fair_id}/"
     
-    registration_link = f"http://{request.get_host()}/nm/students/register/{job_fair_id}/"
     
     qr.add_data(registration_link)
     qr.make(fit=True)
@@ -112,7 +113,7 @@ def index(request):
         job_fair.save()
         
         # Pass district to QR code generation
-        qr_code_image = generate_qr_code_image(request,job_fair.job_fair_id, district)
+        qr_code_image = generate_qr_code_image(job_fair.job_fair_id, district)
         
         job_fair.qr_code.save(f"qr_{job_fair.job_fair_id}.png", ContentFile(qr_code_image))
         job_fair.save()
@@ -161,7 +162,7 @@ def companies(request):
         
         # Now we can use recruiter_job_fair
         if not recruiter_job_fair.qr_code:
-            qr_code_image = generate_recruiter_qr_code(request, job_fair_id, recruiter.recruiter_id)
+            qr_code_image = generate_recruiter_qr_code(job_fair_id, recruiter.recruiter_id)
             recruiter_job_fair.qr_code.save(
                 f"recruiter_job_fair_{job_fair_id}_{recruiter.recruiter_id}.png", 
                 ContentFile(qr_code_image)
@@ -224,16 +225,16 @@ def reset_recruiter_password(request):
 
 
 
-def generate_recruiter_qr_code(request, job_fair_id, recruiter_id):
+def generate_recruiter_qr_code(job_fair_id, recruiter_id):
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=8,
         border=4
     )
-    
-    # The URL will be used by students to mark their attendance
-    attendance_url = f"http://{request.get_host()}/nm/students/mark-attendance/{job_fair_id}/{recruiter_id}/"
+    public_url = 'http://13.49.75.11'  # Replace with your EC2 instance's public IP or domain
+    attendance_url = f"{public_url}/nm/students/mark-attendance/{job_fair_id}/{recruiter_id}/"
+
     
     qr.add_data(attendance_url)
     qr.make(fit=True)
