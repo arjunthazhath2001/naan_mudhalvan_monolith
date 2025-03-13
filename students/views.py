@@ -123,6 +123,11 @@ def mark_recruiter_attendance(request, job_fair_id, recruiter_id):
                 'type': 'new_attendance',
                 'student': student_data,
                 'timestamp': timestamp,
+                'status': attendance.status,
+                'round_1': attendance.round_1,
+                'round_2': attendance.round_2,
+                'round_3': attendance.round_3,
+                'notes': attendance.notes
             }
         )
         

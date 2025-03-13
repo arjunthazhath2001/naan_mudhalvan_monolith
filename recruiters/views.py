@@ -5,6 +5,8 @@ from placement_team.models import RecruiterJobFair, Job_fairs
 from students.models import RecruiterStudentAttendance, StudentRegistration
 from django.http import JsonResponse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 
 
 def recruiter_login(request):
@@ -79,7 +81,7 @@ def recruiter_dashboard(request):
         attendance_records = RecruiterStudentAttendance.objects.filter(
             recruiter_id=recruiter_id, 
             job_fair_id=selected_job_fair.job_fair_id
-        ).order_by('-timestamp')  # This is the important change - ordering by most recent first
+        ).order_by('-timestamp')
         
         # Enhance attendance records with student details
         attendances = []
@@ -91,7 +93,12 @@ def recruiter_dashboard(request):
                 )
                 attendances.append({
                     'timestamp': record.timestamp,
-                    'student': student
+                    'student': student,
+                    'status': record.status,
+                    'round_1': record.round_1,
+                    'round_2': record.round_2,
+                    'round_3': record.round_3,
+                    'notes': record.notes
                 })
             except StudentRegistration.DoesNotExist:
                 # Handle case where student record not found
@@ -132,39 +139,112 @@ def recruiter_logout(request):
     return redirect('recruiter_login')
 
 
-
-def get_job_fair_attendances(request, job_fair_id):
+@csrf_exempt
+@require_POST
+def update_student_status(request):
     if 'recruiter_id' not in request.session:
-        return JsonResponse({'error': 'Not authenticated'}, status=401)
+        return JsonResponse({'success': False, 'error': 'Not authenticated'}, status=401)
     
     recruiter_id = request.session['recruiter_id']
+    job_fair_id = request.POST.get('job_fair_id')
+    student_reg_number = request.POST.get('student_reg_number')
+    new_status = request.POST.get('status')
     
-    # Get all attendance records for this job fair and recruiter
-    # ORDER BY timestamp DESC to show most recent first
-    attendance_records = RecruiterStudentAttendance.objects.filter(
-        recruiter_id=recruiter_id,
-        job_fair_id=job_fair_id
-    ).order_by('-timestamp')  # Add ordering here
+    if not all([job_fair_id, student_reg_number, new_status]):
+        return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
     
-    # Prepare the response data
-    attendances_data = []
-    for record in attendance_records:
-        try:
-            student = StudentRegistration.objects.get(
-                registration_number=record.student_registration_number,
-                job_fair_id=job_fair_id
-            )
-            
-            attendances_data.append({
-                'registration_number': student.registration_number,
-                'name': student.name,
-                'college_name': student.college_name,
-                'has_resume': bool(student.resume),
-                'resume_url': student.resume.url if student.resume else None,
-                'timestamp': timezone.localtime(record.timestamp).strftime("%I:%M %p")
-            })
-        except StudentRegistration.DoesNotExist:
-            # Skip if student record not found
-            pass
+    try:
+        attendance = RecruiterStudentAttendance.objects.get(
+            job_fair_id=job_fair_id,
+            recruiter_id=recruiter_id,
+            student_registration_number=student_reg_number
+        )
+        
+        # Validate status value
+        valid_statuses = [choice[0] for choice in RecruiterStudentAttendance.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return JsonResponse({'success': False, 'error': 'Invalid status value'}, status=400)
+        
+        attendance.status = new_status
+        attendance.save()
+        
+        return JsonResponse({'success': True})
     
-    return JsonResponse({'attendances': attendances_data})
+    except RecruiterStudentAttendance.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Attendance record not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def update_round_status(request):
+    if 'recruiter_id' not in request.session:
+        return JsonResponse({'success': False, 'error': 'Not authenticated'}, status=401)
+    
+    recruiter_id = request.session['recruiter_id']
+    job_fair_id = request.POST.get('job_fair_id')
+    student_reg_number = request.POST.get('student_reg_number')
+    round_number = request.POST.get('round_number')  # Should be 'round_1', 'round_2', or 'round_3'
+    new_status = request.POST.get('status')
+    
+    if not all([job_fair_id, student_reg_number, round_number, new_status]):
+        return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
+    
+    if round_number not in ['round_1', 'round_2', 'round_3']:
+        return JsonResponse({'success': False, 'error': 'Invalid round number'}, status=400)
+    
+    try:
+        attendance = RecruiterStudentAttendance.objects.get(
+            job_fair_id=job_fair_id,
+            recruiter_id=recruiter_id,
+            student_registration_number=student_reg_number
+        )
+        
+        # Validate status value
+        valid_statuses = [choice[0] for choice in RecruiterStudentAttendance.ROUND_STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return JsonResponse({'success': False, 'error': 'Invalid status value'}, status=400)
+        
+        # Update the appropriate round field
+        setattr(attendance, round_number, new_status)
+        attendance.save()
+        
+        return JsonResponse({'success': True})
+    
+    except RecruiterStudentAttendance.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Attendance record not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def update_student_notes(request):
+    if 'recruiter_id' not in request.session:
+        return JsonResponse({'success': False, 'error': 'Not authenticated'}, status=401)
+    
+    recruiter_id = request.session['recruiter_id']
+    job_fair_id = request.POST.get('job_fair_id')
+    student_reg_number = request.POST.get('student_reg_number')
+    notes = request.POST.get('notes', '')
+    
+    if not all([job_fair_id, student_reg_number]):
+        return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
+    
+    try:
+        attendance = RecruiterStudentAttendance.objects.get(
+            job_fair_id=job_fair_id,
+            recruiter_id=recruiter_id,
+            student_registration_number=student_reg_number
+        )
+        
+        attendance.notes = notes
+        attendance.save()
+        
+        return JsonResponse({'success': True})
+    
+    except RecruiterStudentAttendance.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Attendance record not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

@@ -20,10 +20,33 @@ class StudentRegistration(models.Model):
         return f"{self.name} - {self.college_name}"
 
 class RecruiterStudentAttendance(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('shortlisted', 'Shortlisted'),
+        ('placed', 'Placed'),
+        ('rejected', 'Rejected')
+    )
+    
+    ROUND_STATUS_CHOICES = (
+        ('not_started', 'Not Started'),
+        ('in_progress', 'In Progress'),
+        ('passed', 'Passed'),
+        ('failed', 'Failed')
+    )
+    
     job_fair_id = models.IntegerField()
     recruiter_id = models.IntegerField()
     student_registration_number = models.CharField(max_length=50)
     timestamp = models.DateTimeField(auto_now_add=True)
+    
+    # Status field for overall status
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Round status fields
+    round_1 = models.CharField(max_length=20, choices=ROUND_STATUS_CHOICES, default='not_started')
+    round_2 = models.CharField(max_length=20, choices=ROUND_STATUS_CHOICES, default='not_started')
+    round_3 = models.CharField(max_length=20, choices=ROUND_STATUS_CHOICES, default='not_started')
+    notes = models.TextField(blank=True, null=True)
     
     class Meta:
         db_table = 'job_fair_recruiter_student_attendance'

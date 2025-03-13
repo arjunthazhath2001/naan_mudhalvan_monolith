@@ -38,5 +38,10 @@ class RecruiterConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'new_attendance',
             'student': event['student'],
-            'timestamp': event['timestamp']
+            'timestamp': event['timestamp'],
+            'status': event.get('status', 'pending'),
+            'round_1': event.get('round_1', 'not_started'),
+            'round_2': event.get('round_2', 'not_started'),
+            'round_3': event.get('round_3', 'not_started'),
+            'notes': event.get('notes', '')
         }))
