@@ -1,0 +1,318 @@
+<!-- students/templates/students_app/dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: rgb(36, 36, 36);
+            padding: 0;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 100%;
+            margin: 15px auto;
+            padding: 15px;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            
+            .dashboard-container {
+                max-width: 800px;
+                padding: 25px;
+                margin: 0 auto;
+            }
+        }
+
+        .dashboard-logo {
+            margin: 15px 0;
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .dashboard-header {
+            margin: 15px 0;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .btn-outline-primary {
+            border-width: 2px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        /* Smaller table text on mobile */
+        .table {
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 576px) {
+            .table {
+                font-size: 0.8rem;
+            }
+            
+            .btn-sm {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.75rem;
+            }
+        }
+        
+        .job-fair-selector {
+            margin-bottom: 20px;
+        }
+        
+        /* Card styles */
+        .card {
+            margin-bottom: 15px;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            padding: 0.75rem 1rem;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        /* Center the logout button */
+        .logout-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        /* Make the table fit better on mobile */
+        .mobile-table th, .mobile-table td {
+            white-space: nowrap;
+            padding: 0.5rem;
+        }
+        
+        /* Status color coding */
+        .status-pending {
+            background-color: #f8f9fa;
+        }
+        
+        .status-shortlisted {
+            background-color: #fff3cd;
+        }
+        
+        .status-placed {
+            background-color: #d1e7dd;
+        }
+        
+        .status-rejected {
+            background-color: #f8d7da;
+        }
+        
+        /* Round status styles */
+        .round-not-started {
+            color: #6c757d;
+        }
+        
+        .round-in-progress {
+            color: #0d6efd;
+            font-weight: bold;
+        }
+        
+        .round-passed {
+            color: #198754;
+            font-weight: bold;
+        }
+        
+        .round-failed {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        /* Optimize timestamp display for mobile */
+        @media (max-width: 576px) {
+            .table th, .table td {
+                padding: 0.4rem 0.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Logo -->
+        <div class="dashboard-logo">
+            Naan Mudhalvan
+        </div>
+
+        <!-- Header Text -->
+        <div class="dashboard-header">
+            Welcome, {{ student_name }}
+        </div>
+
+        <!-- Job Fair Selector -->
+        {% if job_fairs|length > 0 %}
+        <div class="job-fair-selector">
+            <label for="job-fair-select" class="form-label">Select Job Fair:</label>
+            <select id="job-fair-select" class="form-select">
+                {% for fair in job_fairs %}
+                <option value="{{ fair.id }}" {% if selected_job_fair.job_fair_id == fair.id %}selected{% endif %}>
+                    {{ fair.district }} - {{ fair.date|date:"d M, Y" }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <!-- Job Fair Info -->
+        <div class="card mb-3">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0 fs-6">Job Fair Details</h5>
+            </div>
+            <div class="card-body" id="job-fair-details">
+                {% if selected_job_fair %}
+                <div class="row">
+                    <div class="col-5"><strong>District:</strong></div>
+                    <div class="col-7"><span id="job-fair-district">{{ selected_job_fair.district }}</span></div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-5"><strong>Date:</strong></div>
+                    <div class="col-7"><span id="job-fair-date">{{ selected_job_fair.date_of_job_fair }}</span></div>
+                </div>
+                {% else %}
+                <p class="text-center text-muted">You have not registered for any job fair yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Company Interactions -->
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0 fs-6">Company Interactions</h5>
+            </div>
+            <div class="card-body p-0" id="attendance-container">
+                {% if attendances %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm mobile-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                                <th>Round 1</th>
+                                <th>Round 2</th>
+                                <th>Round 3</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-table-body">
+                            {% for attendance in attendances %}
+                            <tr class="status-{{ attendance.status }}">
+                                <td>{{ attendance.recruiter_email }}</td>
+                                <td>{{ attendance.timestamp|date:"d/m/Y g:i A" }}</td>
+                                <td>
+                                    {% if attendance.status == 'pending' %}
+                                        <span class="badge bg-secondary">Pending</span>
+                                    {% elif attendance.status == 'shortlisted' %}
+                                        <span class="badge bg-warning text-dark">Shortlisted</span>
+                                    {% elif attendance.status == 'placed' %}
+                                        <span class="badge bg-success">Placed</span>
+                                    {% elif attendance.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.round_1 == 'not_started' %}
+                                        <span class="round-not-started">Not Started</span>
+                                    {% elif attendance.round_1 == 'in_progress' %}
+                                        <span class="round-in-progress">In Progress</span>
+                                    {% elif attendance.round_1 == 'passed' %}
+                                        <span class="round-passed">Passed</span>
+                                    {% elif attendance.round_1 == 'failed' %}
+                                        <span class="round-failed">Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.round_2 == 'not_started' %}
+                                        <span class="round-not-started">Not Started</span>
+                                    {% elif attendance.round_2 == 'in_progress' %}
+                                        <span class="round-in-progress">In Progress</span>
+                                    {% elif attendance.round_2 == 'passed' %}
+                                        <span class="round-passed">Passed</span>
+                                    {% elif attendance.round_2 == 'failed' %}
+                                        <span class="round-failed">Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.round_3 == 'not_started' %}
+                                        <span class="round-not-started">Not Started</span>
+                                    {% elif attendance.round_3 == 'in_progress' %}
+                                        <span class="round-in-progress">In Progress</span>
+                                    {% elif attendance.round_3 == 'passed' %}
+                                        <span class="round-passed">Passed</span>
+                                    {% elif attendance.round_3 == 'failed' %}
+                                        <span class="round-failed">Failed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center text-muted p-3" id="no-attendance-message">
+                    {% if selected_job_fair %}
+                        You haven't visited any companies at this job fair yet.
+                    {% else %}
+                        Select a job fair to view your company interactions.
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Logout Button -->
+        <div class="logout-container">
+            <a href="{% url 'student_logout' %}" class="btn btn-outline-danger">Logout</a>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- JS for handling job fair selection -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Job Fair dropdown change handler
+            const jobFairSelect = document.getElementById('job-fair-select');
+            if (jobFairSelect) {
+                jobFairSelect.addEventListener('change', function() {
+                    const selectedJobFairId = this.value;
+                    if (selectedJobFairId) {
+                        // Redirect to the page with the new job fair ID
+                        window.location.href = `/nm/students/dashboard/?job_fair_id=${selectedJobFairId}`;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,3 +1,5 @@
+# students/models.py - Update the StudentRegistration model
+
 from django.db import models
 
 class StudentRegistration(models.Model):
@@ -9,6 +11,10 @@ class StudentRegistration(models.Model):
     resume = models.FileField(upload_to='resumes/', blank=True, null=True)
     registration_time = models.DateTimeField(auto_now_add=True)
     
+    # Authentication fields
+    password = models.CharField(max_length=50, null=True, blank=True)
+    is_first_login = models.BooleanField(default=True)
+    
     class Meta:
         db_table = 'student_registrations'
         constraints = [
@@ -16,8 +22,10 @@ class StudentRegistration(models.Model):
                 fields=['job_fair_id', 'registration_number'], 
                 name='unique_student_job_fair_registration'
             )]
+    
     def __str__(self):
         return f"{self.name} - {self.college_name}"
+
 
 class RecruiterStudentAttendance(models.Model):
     STATUS_CHOICES = (
