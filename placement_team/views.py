@@ -35,7 +35,7 @@ def generate_qr_code_image(job_fair_id, district):
                        error_correction=qrcode.constants.ERROR_CORRECT_L, 
                        box_size=8,  # Reduced from 10 to make room for text
                        border=4)
-    public_url = 'http://13.49.75.11'  # Replace with your EC2 instance's public IP or domain
+    public_url = 'http://13.49.75.11:8000'  # Replace with your EC2 instance's public IP or domain
     registration_link = f"{public_url}/nm/students/register/{job_fair_id}/"
     
     
@@ -232,7 +232,7 @@ def generate_recruiter_qr_code(job_fair_id, recruiter_id):
         box_size=8,
         border=4
     )
-    public_url = 'http://13.49.75.11'  # Replace with your EC2 instance's public IP or domain
+    public_url = 'http://13.49.75.11:8000'  # Replace with your EC2 instance's public IP or domain
     attendance_url = f"{public_url}/nm/students/mark-attendance/{job_fair_id}/{recruiter_id}/"
 
     
