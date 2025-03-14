@@ -447,14 +447,6 @@ def check_placement_status(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-# Add this to the RecruiterConsumer class in recruiters/consumers.py
-async def student_placed(self, event):
-    """Send message about placed student to client"""
-    await self.send(text_data=json.dumps({
-        'type': 'student_placed',
-        'student_reg_number': event['student_reg_number'],
-        'student_name': event['student_name']
-    }))
 
 # Update the update_student_status function in recruiters/views.py
 @csrf_exempt

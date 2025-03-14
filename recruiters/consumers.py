@@ -32,6 +32,14 @@ class RecruiterConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         pass
     
+        # Make sure this method is inside the RecruiterConsumer class
+    async def student_placed(self, event):
+        """Send message about placed student to client"""
+        await self.send(text_data=json.dumps({
+            'type': 'student_placed',
+            'student_reg_number': event['student_reg_number'],
+            'student_name': event['student_name']
+        }))
     # Receive message from room group
     async def new_attendance(self, event):
         # Send message to WebSocket

@@ -288,7 +288,7 @@
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <div>
                     <h5 class="mb-0 fs-6 d-inline">Student Attendance</h5>
-                    <span class="round-indicator" id="current-round">Round 1</span>
+                    <span class="round-indicator" id="current-round">Round {{ attendances.0.current_round|default:1 }}</span>
                 </div>
                 <button class="btn btn-success btn-sm submit-round-btn" id="submit-round-btn">
                     SUBMIT
@@ -573,6 +573,7 @@
                 });
                 
                 // Listen for messages
+                // In the setupWebSocket function in the dashboard.html
                 window.socket.addEventListener('message', function(event) {
                     const data = JSON.parse(event.data);
                     console.log('Message from server:', data);
@@ -581,11 +582,10 @@
                         // Handle new attendance notification
                         handleNewAttendance(data);
                     } else if (data.type === 'student_placed') {
-                        // Handle student placement notification (remove from this recruiter's view)
+                        // Make sure this is called with the student reg number
                         handleStudentPlaced(data.student_reg_number);
                     }
-                });
-                
+                });                
                 // Connection closed
                 window.socket.addEventListener('close', function(event) {
                     console.log('WebSocket connection closed');
