@@ -315,7 +315,8 @@ def analytics(request):
                 ).aggregate(
                     student_count=Count('student_registration_number'),
                     shortlisted=Count('student_registration_number', filter=Q(status='shortlisted')),
-                    placed=Count('student_registration_number', filter=Q(status='placed'))
+                    placed=Count('student_registration_number', filter=Q(status='placed')),
+                    rejected=Count('student_registration_number', filter=Q(status='rejected'))
                 )
                 
                 companies.append({
@@ -323,7 +324,8 @@ def analytics(request):
                     'email': rjf.recruiter.recruiter_email,
                     'student_count': attendance_stats['student_count'],
                     'shortlisted': attendance_stats['shortlisted'],
-                    'placed': attendance_stats['placed']
+                    'placed': attendance_stats['placed'],
+                    'rejected': attendance_stats['rejected']  # Add this line
                 })
             
             # Sort companies by student attendance count (descending)
