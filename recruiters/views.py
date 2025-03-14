@@ -92,6 +92,8 @@ def recruiter_dashboard(request):
             recruiter_id=recruiter_id, 
             job_fair_id=selected_job_fair.job_fair_id,
             current_round=current_round  # Filter by current round
+        ).exclude(
+            status='rejected'  # Exclude students who have been rejected
         ).order_by('-timestamp')
         
         # Enhance attendance records with student details
