@@ -31,6 +31,11 @@ def recruiter_login(request):
     
     return render(request, 'recruiters_app/login.html')
 
+
+
+
+
+
 def recruiter_dashboard(request):
     if 'recruiter_id' not in request.session:
         # If recruiter is not logged in, redirect to login page
@@ -78,11 +83,15 @@ def recruiter_dashboard(request):
         # Get QR code URL for the selected job fair
         qr_code_url = selected_rjf.qr_code.url if selected_rjf.qr_code else None
         
+        # Get the current round for this recruiter at this job fair
+        current_round = selected_rjf.current_round
+        
         # Get student attendances for this recruiter at the selected job fair
-        # ORDER BY timestamp DESC to show most recent first
+        # and filter by the current round
         attendance_records = RecruiterStudentAttendance.objects.filter(
             recruiter_id=recruiter_id, 
-            job_fair_id=selected_job_fair.job_fair_id
+            job_fair_id=selected_job_fair.job_fair_id,
+            current_round=current_round  # Filter by current round
         ).order_by('-timestamp')
         
         # Enhance attendance records with student details
@@ -100,7 +109,8 @@ def recruiter_dashboard(request):
                     'round_1': record.round_1,
                     'round_2': record.round_2,
                     'round_3': record.round_3,
-                    'notes': record.notes
+                    'notes': record.notes,
+                    'current_round': current_round  # Pass the current round to the template
                 })
             except StudentRegistration.DoesNotExist:
                 # Handle case where student record not found
@@ -122,7 +132,8 @@ def recruiter_dashboard(request):
             'job_fairs': job_fairs,
             'selected_job_fair': selected_job_fair,
             'qr_code_url': qr_code_url,
-            'attendances': attendances
+            'attendances': attendances,
+            'current_round': current_round  # Pass the current round to the template
         })
         
     except Recruiter.DoesNotExist:
@@ -131,6 +142,9 @@ def recruiter_dashboard(request):
         del request.session['recruiter_email']
         return redirect('recruiter_login')
     
+
+
+
 
 def recruiter_logout(request):
     # Clear session data
@@ -300,7 +314,8 @@ def shortlist_multiple_students(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-# Add these new functions to recruiters/views.py
+
+
 
 @csrf_exempt
 @require_POST
@@ -356,6 +371,15 @@ def submit_round(request):
             # Update the current round for all students passing to next round
             attendance.current_round = round_number + 1
             attendance.save()
+        
+        # Update the current round in the RecruiterJobFair model
+        from placement_team.models import RecruiterJobFair
+        recruiter_job_fair = RecruiterJobFair.objects.get(
+            recruiter_id=recruiter_id,
+            job_fair_id=job_fair_id
+        )
+        recruiter_job_fair.current_round = round_number + 1
+        recruiter_job_fair.save()
                 
         # Remove rejected students from the view (they'll still be in database)
         # This happens in the frontend JavaScript
@@ -364,6 +388,12 @@ def submit_round(request):
     
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+
+
+
+
 
 
 @csrf_exempt
