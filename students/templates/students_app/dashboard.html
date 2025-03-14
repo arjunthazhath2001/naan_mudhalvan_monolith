@@ -1,4 +1,4 @@
-<!-- students/templates/students_app/dashboard.html -->
+<!-- Updated Student Dashboard with Round Status Display -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,7 +117,7 @@
             background-color: #f8f9fa;
         }
         
-        .status-shortlisted {
+        .status-next {
             background-color: #fff3cd;
         }
         
@@ -129,18 +129,47 @@
             background-color: #f8d7da;
         }
         
+        .status-removed {
+            background-color: #e9ecef;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
         /* Round status styles */
-        .round-not-started {
+        .round-badge {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 3px;
+        }
+        
+        .round-na {
+            background-color: #e9ecef;
             color: #6c757d;
         }
         
+        .round-pending {
+            background-color: #f8f9fa;
+            color: #212529;
+            border: 1px solid #dee2e6;
+        }
+        
         .round-passed {
-            color: #198754;
-            font-weight: bold;
+            background-color: #198754;
+            color: white;
         }
         
         .round-failed {
-            color: #dc3545;
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .company-name {
             font-weight: bold;
         }
         
@@ -149,6 +178,11 @@
             .table th, .table td {
                 padding: 0.4rem 0.3rem;
             }
+        }
+        
+        .round-status-container {
+            display: flex;
+            align-items: center;
         }
     </style>
 </head>
@@ -211,56 +245,50 @@
                         <thead>
                             <tr>
                                 <th>Company</th>
-                                <th>Date & Time</th>
                                 <th>Status</th>
-                                <th>Round 1</th>
-                                <th>Round 2</th>
-                                <th>Round 3</th>
+                                <th>Round Status</th>
+                                <th>Time</th>
                             </tr>
                         </thead>
                         <tbody id="attendance-table-body">
                             {% for attendance in attendances %}
                             <tr class="status-{{ attendance.status }}">
-                                <td>{{ attendance.recruiter_email }}</td>
-                                <td>{{ attendance.timestamp|date:"d/m/Y g:i A" }}</td>
+                                <td class="company-name">{{ attendance.recruiter_email }}</td>
                                 <td>
                                     {% if attendance.status == 'pending' %}
                                         <span class="badge bg-secondary">Pending</span>
-                                    {% elif attendance.status == 'shortlisted' %}
-                                        <span class="badge bg-warning text-dark">Shortlisted</span>
+                                    {% elif attendance.status == 'next' %}
+                                        <span class="badge bg-warning text-dark">Next Round</span>
                                     {% elif attendance.status == 'placed' %}
                                         <span class="badge bg-success">Placed</span>
                                     {% elif attendance.status == 'rejected' %}
                                         <span class="badge bg-danger">Rejected</span>
+                                    {% elif attendance.status == 'removed' %}
+                                        <span class="badge bg-secondary">Placed Elsewhere</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if attendance.round_1 == 'not_started' %}
-                                        <span class="round-not-started">Not Started</span>
-                                    {% elif attendance.round_1 == 'passed' %}
-                                        <span class="round-passed">Passed</span>
-                                    {% elif attendance.round_1 == 'failed' %}
-                                        <span class="round-failed">Failed</span>
-                                    {% endif %}
+                                    <div class="round-status-container">
+                                        <!-- Round 1 -->
+                                        <div class="round-badge {% if attendance.round_1 == 'not_started' %}round-pending{% elif attendance.round_1 == 'passed' %}round-passed{% elif attendance.round_1 == 'failed' %}round-failed{% else %}round-na{% endif %}" 
+                                             title="Round 1: {% if attendance.round_1 == 'not_started' %}Pending{% elif attendance.round_1 == 'passed' %}Passed{% elif attendance.round_1 == 'failed' %}Failed{% else %}N/A{% endif %}">
+                                            1
+                                        </div>
+                                        
+                                        <!-- Round 2 -->
+                                        <div class="round-badge {% if attendance.round_2 == 'not_started' %}round-pending{% elif attendance.round_2 == 'passed' %}round-passed{% elif attendance.round_2 == 'failed' %}round-failed{% else %}round-na{% endif %}" 
+                                             title="Round 2: {% if attendance.round_2 == 'not_started' %}Pending{% elif attendance.round_2 == 'passed' %}Passed{% elif attendance.round_2 == 'failed' %}Failed{% else %}N/A{% endif %}">
+                                            2
+                                        </div>
+                                        
+                                        <!-- Round 3 -->
+                                        <div class="round-badge {% if attendance.round_3 == 'not_started' %}round-pending{% elif attendance.round_3 == 'passed' %}round-passed{% elif attendance.round_3 == 'failed' %}round-failed{% else %}round-na{% endif %}" 
+                                             title="Round 3: {% if attendance.round_3 == 'not_started' %}Pending{% elif attendance.round_3 == 'passed' %}Passed{% elif attendance.round_3 == 'failed' %}Failed{% else %}N/A{% endif %}">
+                                            3
+                                        </div>
+                                    </div>
                                 </td>
-                                <td>
-                                    {% if attendance.round_2 == 'not_started' %}
-                                        <span class="round-not-started">Not Started</span>
-                                    {% elif attendance.round_2 == 'passed' %}
-                                        <span class="round-passed">Passed</span>
-                                    {% elif attendance.round_2 == 'failed' %}
-                                        <span class="round-failed">Failed</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if attendance.round_3 == 'not_started' %}
-                                        <span class="round-not-started">Not Started</span>
-                                    {% elif attendance.round_3 == 'passed' %}
-                                        <span class="round-passed">Passed</span>
-                                    {% elif attendance.round_3 == 'failed' %}
-                                        <span class="round-failed">Failed</span>
-                                    {% endif %}
-                                </td>
+                                <td>{{ attendance.timestamp|date:"d/m g:i A" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -301,6 +329,44 @@
                     }
                 });
             }
+            
+            // Add tooltips to round badges
+            const roundBadges = document.querySelectorAll('.round-badge');
+            roundBadges.forEach(badge => {
+                const title = badge.getAttribute('title');
+                badge.addEventListener('mouseover', function() {
+                    // Create tooltip div
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.style.position = 'absolute';
+                    tooltip.style.backgroundColor = 'rgba(0,0,0,0.8)';
+                    tooltip.style.color = 'white';
+                    tooltip.style.padding = '5px 10px';
+                    tooltip.style.borderRadius = '4px';
+                    tooltip.style.fontSize = '12px';
+                    tooltip.style.zIndex = '1000';
+                    tooltip.textContent = title;
+                    
+                    // Position tooltip
+                    const rect = badge.getBoundingClientRect();
+                    tooltip.style.top = (rect.bottom + 5) + 'px';
+                    tooltip.style.left = rect.left + 'px';
+                    
+                    // Add to body
+                    document.body.appendChild(tooltip);
+                    
+                    // Store reference to tooltip
+                    badge.tooltip = tooltip;
+                });
+                
+                badge.addEventListener('mouseout', function() {
+                    // Remove tooltip on mouseout
+                    if (badge.tooltip) {
+                        document.body.removeChild(badge.tooltip);
+                        badge.tooltip = null;
+                    }
+                });
+            });
         });
     </script>
 </body>

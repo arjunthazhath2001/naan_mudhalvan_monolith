@@ -1,3 +1,4 @@
+<!-- Modified Recruiter Dashboard with Improved Round Management -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -153,7 +154,7 @@
             background-color: #f8f9fa;
         }
         
-        .status-shortlisted {
+        .status-next {
             background-color: #fff3cd;
         }
         
@@ -165,24 +166,27 @@
             background-color: #f8d7da;
         }
         
-        /* Round status styles */
-        .round-not-started {
-            color: #6c757d;
+        /* Round badges */
+        .round-badge {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #6c757d;
+            color: white;
+            text-align: center;
+            line-height: 24px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 5px;
         }
         
-        .round-in-progress {
-            color: #0d6efd;
-            font-weight: bold;
+        .round-badge.active {
+            background-color: #0d6efd;
         }
         
-        .round-passed {
-            color: #198754;
-            font-weight: bold;
-        }
-        
-        .round-failed {
-            color: #dc3545;
-            font-weight: bold;
+        .round-badge.completed {
+            background-color: #198754;
         }
         
         /* Make the table more readable by adjusting row heights and spacing */
@@ -193,6 +197,30 @@
         /* Make the form selects more touch-friendly */
         .form-select {
             cursor: pointer;
+        }
+        
+        /* Round indicator in header */
+        .round-indicator {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        /* Submit button styling */
+        .submit-round-btn {
+            background-color: #198754;
+            color: white;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        
+        .submit-round-btn:hover {
+            background-color: #146c43;
         }
     </style>
 </head>
@@ -258,12 +286,13 @@
         <!-- Student Attendance -->
         <div class="card">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fs-6">Student Attendance</h5>
-                {% if attendances %}
-                <button class="btn btn-warning btn-sm" id="mass-shortlist-btn">
-                    Shortlist All Pending
+                <div>
+                    <h5 class="mb-0 fs-6 d-inline">Student Attendance</h5>
+                    <span class="round-indicator" id="current-round">Round 1</span>
+                </div>
+                <button class="btn btn-success btn-sm submit-round-btn" id="submit-round-btn">
+                    SUBMIT
                 </button>
-                {% endif %}
             </div>
             <div class="card-body p-0" id="attendance-container">
                 {% if attendances %}
@@ -279,7 +308,6 @@
                                 <th>Status</th>
                                 <th>Reg #</th>
                                 <th class="col-name">Name</th>
-                                <th>Rounds</th>
                                 <th>Time</th>
                                 <th>Resume</th>
                             </tr>
@@ -297,133 +325,14 @@
                                 <td>
                                     <select class="form-select form-select-sm status-select" 
                                             onchange="updateStudentStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}')">
-                                        <option value="pending" {% if attendance.status == 'pending' %}selected{% endif %}>Pending</option>
-                                        <option value="shortlisted" {% if attendance.status == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
+                                        <option value="pending" {% if attendance.status == 'pending' %}selected{% endif %} disabled>Pending</option>
+                                        <option value="next" {% if attendance.status == 'next' %}selected{% endif %}>Next Round</option>
                                         <option value="placed" {% if attendance.status == 'placed' %}selected{% endif %}>Placed</option>
                                         <option value="rejected" {% if attendance.status == 'rejected' %}selected{% endif %}>Rejected</option>
                                     </select>
                                 </td>
                                 <td>{{ attendance.student.registration_number }}</td>
                                 <td>{{ attendance.student.name }}</td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#roundsModal-{{ attendance.student.registration_number }}">
-                                        Rounds
-                                    </button>
-                                    
-                                    <!-- Rounds Modal -->
-                                    <div class="modal fade" id="roundsModal-{{ attendance.student.registration_number }}" tabindex="-1" 
-                                            aria-labelledby="roundsModalLabel-{{ attendance.student.registration_number }}" 
-                                            aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="roundsModalLabel-{{ attendance.student.registration_number }}">
-                                                        Interview Rounds: {{ attendance.student.name }}
-                                                    </h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <ul class="nav nav-tabs" id="roundsTabs-{{ attendance.student.registration_number }}" role="tablist">
-                                                        <li class="nav-item" role="presentation">
-                                                            <button class="nav-link active" 
-                                                                    id="round1-tab-{{ attendance.student.registration_number }}" 
-                                                                    data-bs-toggle="tab" 
-                                                                    data-bs-target="#round1-content-{{ attendance.student.registration_number }}" 
-                                                                    type="button" role="tab" aria-selected="true">Round 1</button>
-                                                        </li>
-                                                        <li class="nav-item" role="presentation">
-                                                            <button class="nav-link" 
-                                                                    id="round2-tab-{{ attendance.student.registration_number }}" 
-                                                                    data-bs-toggle="tab" 
-                                                                    data-bs-target="#round2-content-{{ attendance.student.registration_number }}" 
-                                                                    type="button" role="tab" aria-selected="false">Round 2</button>
-                                                        </li>
-                                                        <li class="nav-item" role="presentation">
-                                                            <button class="nav-link" 
-                                                                    id="round3-tab-{{ attendance.student.registration_number }}" 
-                                                                    data-bs-toggle="tab" 
-                                                                    data-bs-target="#round3-content-{{ attendance.student.registration_number }}" 
-                                                                    type="button" role="tab" aria-selected="false">Round 3</button>
-                                                        </li>
-                                                        <li class="nav-item" role="presentation">
-                                                            <button class="nav-link" 
-                                                                    id="notes-tab-{{ attendance.student.registration_number }}" 
-                                                                    data-bs-toggle="tab" 
-                                                                    data-bs-target="#notes-content-{{ attendance.student.registration_number }}" 
-                                                                    type="button" role="tab" aria-selected="false">Notes</button>
-                                                        </li>
-                                                    </ul>
-                                                    <div class="tab-content pt-3" id="roundsTabContent-{{ attendance.student.registration_number }}">
-                                                        <!-- Round 1 -->
-                                                        <div class="tab-pane fade show active" 
-                                                                id="round1-content-{{ attendance.student.registration_number }}" 
-                                                                role="tabpanel">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Round 1 Status:</label>
-                                                                <select class="form-select" 
-                                                                        onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}', 'round_1')">
-                                                                    <option value="not_started" {% if attendance.round_1 == 'not_started' %}selected{% endif %}>Not Started</option>
-                                                                    <option value="passed" {% if attendance.round_1 == 'passed' %}selected{% endif %}>Passed</option>
-                                                                    <option value="failed" {% if attendance.round_1 == 'failed' %}selected{% endif %}>Failed</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <!-- Round 2 -->
-                                                        <div class="tab-pane fade" 
-                                                                id="round2-content-{{ attendance.student.registration_number }}" 
-                                                                role="tabpanel">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Round 2 Status:</label>
-                                                                <select class="form-select" 
-                                                                        onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}', 'round_2')">
-                                                                    <option value="not_started" {% if attendance.round_2 == 'not_started' %}selected{% endif %}>Not Started</option>
-                                                                    <option value="passed" {% if attendance.round_2 == 'passed' %}selected{% endif %}>Passed</option>
-                                                                    <option value="failed" {% if attendance.round_2 == 'failed' %}selected{% endif %}>Failed</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <!-- Round 3 -->
-                                                        <div class="tab-pane fade" 
-                                                                id="round3-content-{{ attendance.student.registration_number }}" 
-                                                                role="tabpanel">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Round 3 Status:</label>
-                                                                <select class="form-select" 
-                                                                        onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}', 'round_3')">
-                                                                    <option value="not_started" {% if attendance.round_3 == 'not_started' %}selected{% endif %}>Not Started</option>
-                                                                    <option value="passed" {% if attendance.round_3 == 'passed' %}selected{% endif %}>Passed</option>
-                                                                    <option value="failed" {% if attendance.round_3 == 'failed' %}selected{% endif %}>Failed</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <!-- Notes -->
-                                                        <div class="tab-pane fade" 
-                                                                id="notes-content-{{ attendance.student.registration_number }}" 
-                                                                role="tabpanel">
-                                                            <div class="mb-3">
-                                                                <label class="form-label">Interviewer Notes:</label>
-                                                                <textarea 
-                                                                    class="form-control" 
-                                                                    rows="5" 
-                                                                    id="notes-{{ attendance.student.registration_number }}"
-                                                                    placeholder="Enter notes about this candidate..."
-                                                                    onblur="updateStudentNotes(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}')">{{ attendance.notes|default:'' }}</textarea>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
                                 <td>{{ attendance.timestamp|date:"g:i A" }}</td>
                                 <td class="text-center">
                                     {% if attendance.student.resume %}
@@ -466,6 +375,30 @@
                 });
             }
             
+            // SUBMIT button handler
+            const submitRoundBtn = document.getElementById('submit-round-btn');
+            if (submitRoundBtn) {
+                submitRoundBtn.addEventListener('click', function() {
+                                            // Get the current round
+                    const currentRoundIndicator = document.getElementById('current-round');
+                    const currentRound = currentRoundIndicator.textContent; // e.g., "Round 1"
+                    const roundNumber = parseInt(currentRound.split(' ')[1]);
+                    
+                    if (roundNumber > 3) {
+                        alert("All rounds have been completed.");
+                        return;
+                    }
+                    
+                    // Ask for confirmation
+                    if (!confirm(`Are you sure you want to submit ${currentRound} and move to Round ${roundNumber + 1}? This will remove rejected candidates, keep placed candidates as placed, and set 'next round' candidates to pending status for the next round.`)) {
+                        return;
+                    }
+                    
+                    // Submit the current round
+                    submitRound('{{ selected_job_fair.job_fair_id }}', roundNumber);
+                });
+            }
+            
             // WebSocket setup for real-time updates
             setupWebSocket();
         });
@@ -485,6 +418,7 @@
             formData.append('job_fair_id', jobFairId);
             formData.append('student_reg_number', studentRegNumber);
             formData.append('status', newStatus);
+            formData.append('current_round', document.getElementById('current-round').textContent.split(' ')[1]);
             
             fetch('/nm/recruiters/update-student-status/', {
                 method: 'POST',
@@ -496,6 +430,13 @@
                     console.error('Error updating status:', data.error);
                     alert('Failed to update status. Please try again.');
                 }
+                
+                // If a student was placed, remove them from the table after a short delay
+                if (newStatus === 'placed') {
+                    setTimeout(() => {
+                        checkPlacementStatus(jobFairId, studentRegNumber);
+                    }, 500);
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -503,58 +444,116 @@
             });
         }
         
-        // Function to update round status
-        function updateRoundStatus(selectElement, jobFairId, studentRegNumber, roundNumber) {
-            const newStatus = selectElement.value;
-            
-            // Send AJAX request to update round status
+        // Function to check if a student has been placed by any recruiter
+        function checkPlacementStatus(jobFairId, studentRegNumber) {
             const formData = new FormData();
             formData.append('job_fair_id', jobFairId);
             formData.append('student_reg_number', studentRegNumber);
+            
+            fetch('/nm/recruiters/check-placement-status/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.placed) {
+                    // Notify user that student has been placed globally
+                    alert(`${data.student_name} has been marked as placed. They will be removed from all other recruiters' dashboards.`);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking placement status:', error);
+            });
+        }
+        
+        // Function to submit a round
+        function submitRound(jobFairId, roundNumber) {
+            const formData = new FormData();
+            formData.append('job_fair_id', jobFairId);
             formData.append('round_number', roundNumber);
-            formData.append('status', newStatus);
             
-            fetch('/nm/recruiters/update-round-status/', {
+            // Show loading indicator on button
+            const submitButton = document.getElementById('submit-round-btn');
+            const originalButtonText = submitButton.textContent;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            submitButton.disabled = true;
+            
+            fetch('/nm/recruiters/submit-round/', {
                 method: 'POST',
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
-                if (!data.success) {
-                    console.error('Error updating round status:', data.error);
-                    alert('Failed to update round status. Please try again.');
+                if (data.success) {
+                    // Update the round indicator
+                    const currentRoundIndicator = document.getElementById('current-round');
+                    currentRoundIndicator.textContent = `Round ${roundNumber + 1}`;
+                    
+                    // Remove rejected candidates and reset status of next/placed to pending
+                    const tableBody = document.getElementById('attendance-table-body');
+                    const rows = Array.from(tableBody.querySelectorAll('tr'));
+                    
+                    rows.forEach(row => {
+                        const statusSelect = row.querySelector('.status-select');
+                        const status = statusSelect.value;
+                        
+                        if (status === 'rejected') {
+                            // Remove rejected rows
+                            row.remove();
+                        } else if (status === 'next') {
+                            // Reset to pending for next round only for 'next' status
+                            statusSelect.value = 'pending';
+                            row.className = '';
+                            row.classList.add('status-pending');
+                            
+                            // Update status in database
+                            const studentRegNumber = row.getAttribute('data-student-reg');
+                            const updateFormData = new FormData();
+                            updateFormData.append('job_fair_id', jobFairId);
+                            updateFormData.append('student_reg_number', studentRegNumber);
+                            updateFormData.append('status', 'pending');
+                            updateFormData.append('current_round', roundNumber + 1);
+                            
+                            fetch('/nm/recruiters/update-student-status/', {
+                                method: 'POST',
+                                body: updateFormData
+                            })
+                            .catch(error => {
+                                console.error('Error updating status for next round:', error);
+                            });
+                        } else if (status === 'placed') {
+                            // For placed students, keep them as placed but update the round
+                            const studentRegNumber = row.getAttribute('data-student-reg');
+                            const updateFormData = new FormData();
+                            updateFormData.append('job_fair_id', jobFairId);
+                            updateFormData.append('student_reg_number', studentRegNumber);
+                            updateFormData.append('status', 'placed'); // Keep as placed
+                            updateFormData.append('current_round', roundNumber + 1);
+                            
+                            fetch('/nm/recruiters/update-student-status/', {
+                                method: 'POST',
+                                body: updateFormData
+                            })
+                            .catch(error => {
+                                console.error('Error updating round for placed student:', error);
+                            });
+                        }
+                    });
+                    
+                    // Show message
+                    alert(`Round ${roundNumber} submitted successfully. Proceeding to Round ${roundNumber + 1}.`);
+                } else {
+                    alert('Failed to submit round: ' + (data.error || 'Unknown error'));
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            });
-        }
-        
-        // Function to update student notes
-        function updateStudentNotes(textareaElement, jobFairId, studentRegNumber) {
-            const notes = textareaElement.value;
-            
-            // Send AJAX request to update notes
-            const formData = new FormData();
-            formData.append('job_fair_id', jobFairId);
-            formData.append('student_reg_number', studentRegNumber);
-            formData.append('notes', notes);
-            
-            fetch('/nm/recruiters/update-student-notes/', {
-                method: 'POST',
-                body: formData
+                console.error('Error submitting round:', error);
+                alert('An error occurred while submitting the round. Please try again.');
             })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    console.error('Error updating notes:', data.error);
-                    alert('Failed to update notes. Please try again.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
+            .finally(() => {
+                // Restore button state
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
             });
         }
         
@@ -581,6 +580,9 @@
                     if (data.type === 'new_attendance') {
                         // Handle new attendance notification
                         handleNewAttendance(data);
+                    } else if (data.type === 'student_placed') {
+                        // Handle student placement notification (remove from this recruiter's view)
+                        handleStudentPlaced(data.student_reg_number);
                     }
                 });
                 
@@ -621,7 +623,6 @@
                                     <th>Status</th>
                                     <th>Reg #</th>
                                     <th class="col-name">Name</th>
-                                    <th>Rounds</th>
                                     <th>Time</th>
                                     <th>Resume</th>
                                 </tr>
@@ -654,8 +655,8 @@
             newRow.setAttribute('data-student-reg', data.student.registration_number);
             newRow.classList.add('status-pending');
             
-            // Generate a unique ID for the modal
-            const modalId = `roundsModal-${data.student.registration_number}`;
+            // Current round from indicator
+            const currentRound = document.getElementById('current-round').textContent.split(' ')[1];
             
             newRow.innerHTML = `
                 <td>
@@ -666,133 +667,14 @@
                 <td>
                     <select class="form-select form-select-sm status-select" 
                             onchange="updateStudentStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}')">
-                        <option value="pending" selected>Pending</option>
-                        <option value="shortlisted">Shortlisted</option>
+                        <option value="pending" selected disabled>Pending</option>
+                        <option value="next">Next Round</option>
                         <option value="placed">Placed</option>
                         <option value="rejected">Rejected</option>
                     </select>
                 </td>
                 <td>${data.student.registration_number}</td>
                 <td>${data.student.name}</td>
-                <td>
-                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#${modalId}">
-                        Rounds
-                    </button>
-                    
-                    <!-- Rounds Modal -->
-                    <div class="modal fade" id="${modalId}" tabindex="-1" 
-                         aria-labelledby="roundsModalLabel-${data.student.registration_number}" 
-                         aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="roundsModalLabel-${data.student.registration_number}">
-                                        Interview Rounds: ${data.student.name}
-                                    </h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <ul class="nav nav-tabs" id="roundsTabs-${data.student.registration_number}" role="tablist">
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link active" 
-                                                    id="round1-tab-${data.student.registration_number}" 
-                                                    data-bs-toggle="tab" 
-                                                    data-bs-target="#round1-content-${data.student.registration_number}" 
-                                                    type="button" role="tab" aria-selected="true">Round 1</button>
-                                        </li>
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link" 
-                                                    id="round2-tab-${data.student.registration_number}" 
-                                                    data-bs-toggle="tab" 
-                                                    data-bs-target="#round2-content-${data.student.registration_number}" 
-                                                    type="button" role="tab" aria-selected="false">Round 2</button>
-                                        </li>
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link" 
-                                                    id="round3-tab-${data.student.registration_number}" 
-                                                    data-bs-toggle="tab" 
-                                                    data-bs-target="#round3-content-${data.student.registration_number}" 
-                                                    type="button" role="tab" aria-selected="false">Round 3</button>
-                                        </li>
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link" 
-                                                    id="notes-tab-${data.student.registration_number}" 
-                                                    data-bs-toggle="tab" 
-                                                    data-bs-target="#notes-content-${data.student.registration_number}" 
-                                                    type="button" role="tab" aria-selected="false">Notes</button>
-                                        </li>
-                                    </ul>
-                                    <div class="tab-content pt-3" id="roundsTabContent-${data.student.registration_number}">
-                                        <!-- Round 1 -->
-                                        <div class="tab-pane fade show active" 
-                                             id="round1-content-${data.student.registration_number}" 
-                                             role="tabpanel">
-                                            <div class="mb-3">
-                                                <label class="form-label">Round 1 Status:</label>
-                                                <select class="form-select" 
-                                                        onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}', 'round_1')">
-                                                    <option value="not_started" selected>Not Started</option>
-                                                    <option value="passed">Passed</option>
-                                                    <option value="failed">Failed</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Round 2 -->
-                                        <div class="tab-pane fade" 
-                                             id="round2-content-${data.student.registration_number}" 
-                                             role="tabpanel">
-                                            <div class="mb-3">
-                                                <label class="form-label">Round 2 Status:</label>
-                                                <select class="form-select" 
-                                                        onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}', 'round_2')">
-                                                    <option value="not_started" selected>Not Started</option>
-                                                    <option value="passed">Passed</option>
-                                                    <option value="failed">Failed</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Round 3 -->
-                                        <div class="tab-pane fade" 
-                                             id="round3-content-${data.student.registration_number}" 
-                                             role="tabpanel">
-                                            <div class="mb-3">
-                                                <label class="form-label">Round 3 Status:</label>
-                                                <select class="form-select" 
-                                                        onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}', 'round_3')">
-                                                    <option value="not_started" selected>Not Started</option>
-                                                    <option value="passed">Passed</option>
-                                                    <option value="failed">Failed</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Notes -->
-                                        <div class="tab-pane fade" 
-                                             id="notes-content-${data.student.registration_number}" 
-                                             role="tabpanel">
-                                            <div class="mb-3">
-                                                <label class="form-label">Interviewer Notes:</label>
-                                                <textarea 
-                                                    class="form-control" 
-                                                    rows="5" 
-                                                    id="notes-${data.student.registration_number}"
-                                                    placeholder="Enter notes about this candidate..."
-                                                    onblur="updateStudentNotes(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}')"></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </td>
                 <td>${data.timestamp}</td>
                 <td class="text-center">
                     ${data.student.has_resume ? 
@@ -810,37 +692,26 @@
                 newRow.style.transition = 'background-color 1s ease';
                 newRow.style.backgroundColor = '';
             }, 100);
-            
-            // If this is the first student, add the "Shortlist All" button
-            if (updatedTableBody.childElementCount === 1) {
-                const cardHeader = document.querySelector('.card-header');
-                if (cardHeader && !document.getElementById('mass-shortlist-btn')) {
-                    const shortlistBtn = document.createElement('button');
-                    shortlistBtn.id = 'mass-shortlist-btn';
-                    shortlistBtn.className = 'btn btn-warning btn-sm';
-                    shortlistBtn.textContent = 'Shortlist All Pending';
-                    shortlistBtn.addEventListener('click', function() {
-                        const selectedStudents = document.querySelectorAll('.student-checkbox:checked');
-                        
-                        if (selectedStudents.length === 0) {
-                            alert('Please select at least one student to shortlist.');
-                            return;
-                        }
-                        
-                        if (confirm(`Are you sure you want to shortlist ${selectedStudents.length} student(s)?`)) {
-                            const regNumbers = Array.from(selectedStudents).map(checkbox => checkbox.value);
-                            shortlistMultipleStudents('{{ selected_job_fair.job_fair_id }}', regNumbers);
-                        }
-                    });
-                    
-                    cardHeader.appendChild(shortlistBtn);
-                }
+        }
+        
+        // Handle student placed notification
+        function handleStudentPlaced(studentRegNumber) {
+            // Find the row with this student
+            const row = document.querySelector(`tr[data-student-reg="${studentRegNumber}"]`);
+            if (row) {
+                // Add fade-out animation
+                row.style.transition = 'opacity 0.5s ease';
+                row.style.opacity = '0';
+                
+                // Remove after animation completes
+                setTimeout(() => {
+                    row.remove();
+                }, 500);
             }
         }
 
-        // Handle Select All checkbox
+        // Select All checkbox functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Select All checkbox functionality
             const selectAllCheckbox = document.getElementById('select-all-checkbox');
             if (selectAllCheckbox) {
                 selectAllCheckbox.addEventListener('change', function() {
@@ -852,99 +723,7 @@
                     });
                 });
             }
-            
-            // Mass shortlist button functionality
-            const massShortlistBtn = document.getElementById('mass-shortlist-btn');
-            if (massShortlistBtn) {
-                massShortlistBtn.addEventListener('click', function() {
-                    // First, check if any students are selected
-                    const selectedStudents = document.querySelectorAll('.student-checkbox:checked');
-                    
-                    if (selectedStudents.length === 0) {
-                        alert('Please select at least one student to shortlist.');
-                        return;
-                    }
-                    
-                    // Confirm action
-                    if (confirm(`Are you sure you want to shortlist ${selectedStudents.length} student(s)?`)) {
-                        // Get the registration numbers of selected students
-                        const regNumbers = Array.from(selectedStudents).map(checkbox => checkbox.value);
-                        
-                        // Call shortlistMultipleStudents function
-                        shortlistMultipleStudents('{{ selected_job_fair.job_fair_id }}', regNumbers);
-                    }
-                });
-            }
         });
-
-        // Function to shortlist multiple students at once
-        function shortlistMultipleStudents(jobFairId, regNumbers) {
-            // Create form data
-            const formData = new FormData();
-            formData.append('job_fair_id', jobFairId);
-            formData.append('reg_numbers', JSON.stringify(regNumbers));
-            
-            // Show loading indicator or disable button
-            const massShortlistBtn = document.getElementById('mass-shortlist-btn');
-            const originalBtnText = massShortlistBtn.innerHTML;
-            massShortlistBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-            massShortlistBtn.disabled = true;
-            
-            // Send AJAX request
-            fetch('/nm/recruiters/shortlist-multiple/', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update UI for each shortlisted student
-                    regNumbers.forEach(regNumber => {
-                        // Find the row
-                        const row = document.querySelector(`tr[data-student-reg="${regNumber}"]`);
-                        if (row) {
-                            // Update row class
-                            row.className = '';
-                            row.classList.add('status-shortlisted');
-                            
-                            // Update select dropdown
-                            const statusSelect = row.querySelector('.status-select');
-                            if (statusSelect) {
-                                statusSelect.value = 'shortlisted';
-                            }
-                            
-                            // Disable checkbox
-                            const checkbox = row.querySelector('.student-checkbox');
-                            if (checkbox) {
-                                checkbox.checked = false;
-                                checkbox.disabled = true;
-                            }
-                        }
-                    });
-                    
-                    // Show success message
-                    alert(`Successfully shortlisted ${regNumbers.length} student(s).`);
-                    
-                    // Uncheck "Select All" checkbox
-                    const selectAllCheckbox = document.getElementById('select-all-checkbox');
-                    if (selectAllCheckbox) {
-                        selectAllCheckbox.checked = false;
-                    }
-                } else {
-                    // Show error message
-                    alert(`Error: ${data.error || 'Failed to shortlist students. Please try again.'}`);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            })
-            .finally(() => {
-                // Restore button state
-                massShortlistBtn.innerHTML = originalBtnText;
-                massShortlistBtn.disabled = false;
-            });
-        }
     </script>
 </body>
 </html>

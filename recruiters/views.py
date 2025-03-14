@@ -7,6 +7,8 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 def recruiter_login(request):
@@ -295,5 +297,206 @@ def shortlist_multiple_students(request):
         
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'Invalid JSON data'}, status=400)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+# Add these new functions to recruiters/views.py
+
+@csrf_exempt
+@require_POST
+def submit_round(request):
+    """Submit the current round and prepare for the next round"""
+    if 'recruiter_id' not in request.session:
+        return JsonResponse({'success': False, 'error': 'Not authenticated'}, status=401)
+    
+    recruiter_id = request.session['recruiter_id']
+    job_fair_id = request.POST.get('job_fair_id')
+    round_number = request.POST.get('round_number')
+    
+    if not all([job_fair_id, round_number]):
+        return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
+    
+    try:
+        # Convert round_number to integer
+        round_number = int(round_number)
+        
+        if round_number < 1 or round_number > 3:
+            return JsonResponse({'success': False, 'error': 'Invalid round number'}, status=400)
+        
+        # Get all attendances for this recruiter at this job fair
+        attendances = RecruiterStudentAttendance.objects.filter(
+            job_fair_id=job_fair_id,
+            recruiter_id=recruiter_id
+        )
+        
+        # Update the round status in the database
+        for attendance in attendances:
+            # Set current round status based on overall status
+            if round_number == 1:
+                if attendance.status == 'next' or attendance.status == 'placed':
+                    attendance.round_1 = 'passed'
+                elif attendance.status == 'rejected':
+                    attendance.round_1 = 'failed'
+            elif round_number == 2:
+                if attendance.status == 'next' or attendance.status == 'placed':
+                    attendance.round_2 = 'passed'
+                elif attendance.status == 'rejected':
+                    attendance.round_2 = 'failed'
+            elif round_number == 3:
+                if attendance.status == 'next' or attendance.status == 'placed':
+                    attendance.round_3 = 'passed'
+                elif attendance.status == 'rejected':
+                    attendance.round_3 = 'failed'
+            
+            # Only change status to pending if student is moving to next round
+            # Keep placed students as placed
+            if attendance.status == 'next':
+                attendance.status = 'pending'
+            
+            # Update the current round for all students passing to next round
+            attendance.current_round = round_number + 1
+            attendance.save()
+                
+        # Remove rejected students from the view (they'll still be in database)
+        # This happens in the frontend JavaScript
+                
+        return JsonResponse({'success': True})
+    
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def check_placement_status(request):
+    """Check if a student has been placed by any recruiter and broadcast to other recruiters"""
+    if 'recruiter_id' not in request.session:
+        return JsonResponse({'success': False, 'error': 'Not authenticated'}, status=401)
+    
+    recruiter_id = request.session['recruiter_id']
+    job_fair_id = request.POST.get('job_fair_id')
+    student_reg_number = request.POST.get('student_reg_number')
+    
+    if not all([job_fair_id, student_reg_number]):
+        return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
+    
+    try:
+        # Get student details
+        student = StudentRegistration.objects.get(
+            job_fair_id=job_fair_id,
+            registration_number=student_reg_number
+        )
+        
+        # Mark the student as placed
+        attendance = RecruiterStudentAttendance.objects.get(
+            job_fair_id=job_fair_id,
+            recruiter_id=recruiter_id,
+            student_registration_number=student_reg_number
+        )
+        
+        attendance.status = 'placed'
+        attendance.save()
+        
+        # Broadcast to all other recruiters that this student has been placed
+        channel_layer = get_channel_layer()
+        
+        # Get all recruiters for this job fair
+        recruiters = RecruiterJobFair.objects.filter(job_fair__job_fair_id=job_fair_id)
+        
+        for rjf in recruiters:
+            # Skip the current recruiter
+            if rjf.recruiter.recruiter_id == int(recruiter_id):
+                continue
+                
+            room_group_name = f'recruiter_{rjf.recruiter.recruiter_id}_jobfair_{job_fair_id}'
+            
+            # Broadcast the message
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'student_placed',
+                    'student_reg_number': student_reg_number,
+                    'student_name': student.name
+                }
+            )
+            
+            # Also update the status for this student with all other recruiters
+            try:
+                other_attendance = RecruiterStudentAttendance.objects.get(
+                    job_fair_id=job_fair_id,
+                    recruiter_id=rjf.recruiter.recruiter_id,
+                    student_registration_number=student_reg_number
+                )
+                
+                other_attendance.status = 'removed'  # Special status to indicate student was placed elsewhere
+                other_attendance.save()
+            except RecruiterStudentAttendance.DoesNotExist:
+                # Student hasn't visited this recruiter yet
+                pass
+        
+        return JsonResponse({
+            'success': True,
+            'placed': True,
+            'student_name': student.name
+        })
+    
+    except StudentRegistration.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Student not found'}, status=404)
+    except RecruiterStudentAttendance.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Attendance record not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+# Add this to the RecruiterConsumer class in recruiters/consumers.py
+async def student_placed(self, event):
+    """Send message about placed student to client"""
+    await self.send(text_data=json.dumps({
+        'type': 'student_placed',
+        'student_reg_number': event['student_reg_number'],
+        'student_name': event['student_name']
+    }))
+
+# Update the update_student_status function in recruiters/views.py
+@csrf_exempt
+@require_POST
+def update_student_status(request):
+    if 'recruiter_id' not in request.session:
+        return JsonResponse({'success': False, 'error': 'Not authenticated'}, status=401)
+    
+    recruiter_id = request.session['recruiter_id']
+    job_fair_id = request.POST.get('job_fair_id')
+    student_reg_number = request.POST.get('student_reg_number')
+    new_status = request.POST.get('status')
+    current_round = request.POST.get('current_round', '1')  # Default to round 1
+    
+    if not all([job_fair_id, student_reg_number, new_status]):
+        return JsonResponse({'success': False, 'error': 'Missing required parameters'}, status=400)
+    
+    try:
+        attendance = RecruiterStudentAttendance.objects.get(
+            job_fair_id=job_fair_id,
+            recruiter_id=recruiter_id,
+            student_registration_number=student_reg_number
+        )
+        
+        # Validate status value - use 'next' instead of 'shortlisted'
+        valid_statuses = ['pending', 'next', 'placed', 'rejected', 'removed']
+        if new_status not in valid_statuses:
+            return JsonResponse({'success': False, 'error': 'Invalid status value'}, status=400)
+        
+        # Update status
+        attendance.status = new_status
+        
+        # If status is 'placed', check if the student should be removed from other recruiters
+        if new_status == 'placed':
+            # This will be handled by check_placement_status
+            pass
+        
+        attendance.save()
+        
+        return JsonResponse({'success': True})
+    
+    except RecruiterStudentAttendance.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Attendance record not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)

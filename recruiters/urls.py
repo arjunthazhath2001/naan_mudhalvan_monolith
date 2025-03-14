@@ -1,4 +1,5 @@
-# recruiters/urls.py
+# Update recruiters/urls.py to add the new endpoints
+
 from django.urls import path
 from . import views
 
@@ -12,4 +13,7 @@ urlpatterns = [
     path('recruiters/update-student-notes/', views.update_student_notes, name='update_student_notes'),
     # New endpoint for mass shortlisting
     path('recruiters/shortlist-multiple/', views.shortlist_multiple_students, name='shortlist_multiple_students'),
+    # New endpoints for the round-based workflow
+    path('recruiters/submit-round/', views.submit_round, name='submit_round'),
+    path('recruiters/check-placement-status/', views.check_placement_status, name='check_placement_status'),
 ]

@@ -27,12 +27,15 @@ class StudentRegistration(models.Model):
         return f"{self.name} - {self.college_name}"
 
 
+# Update the RecruiterStudentAttendance model in students/models.py
+
 class RecruiterStudentAttendance(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
-        ('shortlisted', 'Shortlisted'),
+        ('next', 'Next Round'),  # Changed from 'shortlisted' to 'next'
         ('placed', 'Placed'),
-        ('rejected', 'Rejected')
+        ('rejected', 'Rejected'),
+        ('removed', 'Placed Elsewhere')  # New status when placed by another recruiter
     )
     
     ROUND_STATUS_CHOICES = (
@@ -53,6 +56,10 @@ class RecruiterStudentAttendance(models.Model):
     round_1 = models.CharField(max_length=20, choices=ROUND_STATUS_CHOICES, default='not_started')
     round_2 = models.CharField(max_length=20, choices=ROUND_STATUS_CHOICES, default='not_started')
     round_3 = models.CharField(max_length=20, choices=ROUND_STATUS_CHOICES, default='not_started')
+    
+    # Current round number (1, 2, or 3)
+    current_round = models.IntegerField(default=1)
+    
     notes = models.TextField(blank=True, null=True)
     
     class Meta:
