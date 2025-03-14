@@ -278,3 +278,97 @@ def generate_recruiter_qr_code(job_fair_id, recruiter_id):
     byte_io.seek(0)
     
     return byte_io.getvalue()
+
+
+@login_required(login_url='login')
+def analytics(request):
+    """View for the analytics dashboard"""
+    job_fairs = Job_fairs.objects.all().order_by('-date_of_creation')
+    selected_job_fair = None
+    student_count = 0
+    company_count = 0
+    companies = []
+
+    # Get the selected job fair ID from the query parameter
+    job_fair_id = request.GET.get('job_fair_id')
+    
+    if job_fair_id:
+        try:
+            selected_job_fair = Job_fairs.objects.get(job_fair_id=job_fair_id)
+            
+            # Count students registered for this job fair
+            student_count = StudentRegistration.objects.filter(job_fair_id=job_fair_id).count()
+            
+            # Get recruiters who attended this job fair
+            recruiter_job_fairs = RecruiterJobFair.objects.filter(job_fair=selected_job_fair)
+            company_count = recruiter_job_fairs.count()
+            
+            # Get attendance data for each company
+            for rjf in recruiter_job_fairs:
+                # Count attendance statistics
+                attendance_stats = RecruiterStudentAttendance.objects.filter(
+                    job_fair_id=job_fair_id,
+                    recruiter_id=rjf.recruiter.recruiter_id
+                ).aggregate(
+                    student_count=Count('student_registration_number'),
+                    shortlisted=Count('student_registration_number', filter=Q(status='shortlisted')),
+                    placed=Count('student_registration_number', filter=Q(status='placed'))
+                )
+                
+                companies.append({
+                    'recruiter_id': rjf.recruiter.recruiter_id,
+                    'email': rjf.recruiter.recruiter_email,
+                    'student_count': attendance_stats['student_count'],
+                    'shortlisted': attendance_stats['shortlisted'],
+                    'placed': attendance_stats['placed']
+                })
+            
+            # Sort companies by student attendance count (descending)
+            companies.sort(key=lambda x: x['student_count'], reverse=True)
+            
+        except Job_fairs.DoesNotExist:
+            pass
+    
+    return render(request, 'placement_team_app/analytics.html', {
+        'job_fairs': job_fairs,
+        'selected_job_fair': selected_job_fair,
+        'student_count': student_count,
+        'company_count': company_count,
+        'companies': companies,
+    })
+
+def get_company_students(request, job_fair_id, recruiter_id):
+    """API to get students who visited a specific company at a job fair"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Not authenticated'}, status=401)
+    
+    try:
+        # Get attendance records for this company
+        attendances = RecruiterStudentAttendance.objects.filter(
+            job_fair_id=job_fair_id,
+            recruiter_id=recruiter_id
+        ).order_by('-timestamp')
+        
+        students = []
+        for attendance in attendances:
+            try:
+                student = StudentRegistration.objects.get(
+                    job_fair_id=job_fair_id,
+                    registration_number=attendance.student_registration_number
+                )
+                
+                students.append({
+                    'registration_number': student.registration_number,
+                    'name': student.name,
+                    'college': student.college_name,
+                    'status': attendance.status,
+                    'timestamp': attendance.timestamp.strftime('%d/%m/%Y %I:%M %p')
+                })
+            except StudentRegistration.DoesNotExist:
+                # Skip if student record not found
+                pass
+        
+        return JsonResponse({'students': students})
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

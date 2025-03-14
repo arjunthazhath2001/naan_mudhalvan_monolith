@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: rgb(36, 36, 36);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        .dashboard-container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        .dashboard-logo {
+            margin: 20px 0;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .dashboard-header {
+            margin: 20px 0;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .btn-group .btn {
+            border-width: 2px;
+        }
+
+        .card {
+            margin-bottom: 20px;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            flex: 1 0 45%;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-title {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #212529;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .qr-container img {
+            max-width: 200px;
+            margin: 0 auto;
+        }
+
+        .company-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .company-item {
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .company-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .status-filter-container {
+            margin-bottom: 15px;
+        }
+
+        .status-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .badge.status-pending {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+
+        .badge.status-shortlisted {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
+
+        .badge.status-placed {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .badge.status-rejected {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+        .status-all {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+
+        .status-pending {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+
+        .status-shortlisted {
+            background-color: #fff3cd;
+            border: 1px solid #ffecb5;
+        }
+
+        .status-placed {
+            background-color: #d1e7dd;
+            border: 1px solid #badbcc;
+        }
+
+        .status-rejected {
+            background-color: #f8d7da;
+            border: 1px solid #f5c2c7;
+        }
+
+        .status-badge.active {
+            outline: 2px solid #0d6efd;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 15px;
+                margin: 10px;
+            }
+            
+            .stat-card {
+                flex: 1 0 100%;
+            }
+            
+            .dashboard-logo {
+                font-size: 2em;
+                margin: 15px 0;
+            }
+            
+            .dashboard-header {
+                font-size: 1.2em;
+                margin: 15px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Logo -->
+        <div class="dashboard-logo">
+            Naan Mudhalvan
+        </div>
+
+        <!-- Header Text -->
+        <div class="dashboard-header">
+            Hello Placement Team
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-group w-100 mb-4" role="group">
+            <a href="{% url 'index' %}" class="btn btn-outline-secondary">Job Fairs</a>
+            <a href="{% url 'companies' %}" class="btn btn-outline-secondary">Companies</a>
+            <a href="{% url 'analytics' %}" class="btn btn-dark active">Analytics</a>
+        </div>
+
+        <!-- Job Fair Selector -->
+        <div class="mb-4">
+            <label for="job-fair-select" class="form-label">Select Job Fair</label>
+            <select class="form-select" id="job-fair-select">
+                <option value="" disabled {% if not selected_job_fair %}selected{% endif %}>Select a job fair</option>
+                {% for job_fair in job_fairs %}
+                <option value="{{ job_fair.job_fair_id }}" {% if selected_job_fair and selected_job_fair.job_fair_id == job_fair.job_fair_id %}selected{% endif %}>
+                    {{ job_fair.district }} - {{ job_fair.date_of_job_fair|date:"d M, Y" }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {% if selected_job_fair %}
+        <div id="analytics-content">
+            <!-- QR Code -->
+            <div class="qr-container mb-4">
+                {% if selected_job_fair.qr_code %}
+                <img src="{{ selected_job_fair.qr_code.url }}" alt="QR Code" class="img-fluid mb-2">
+                <a href="{{ selected_job_fair.qr_code.url }}" download="job_fair_qr.png" class="btn btn-sm btn-outline-secondary">Download QR Code</a>
+                {% else %}
+                <p class="text-muted">No QR code available for this job fair</p>
+                {% endif %}
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-title">Date Conducted</div>
+                    <div class="stat-value">{{ selected_job_fair.date_of_job_fair|date:"d M, Y" }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">District</div>
+                    <div class="stat-value">{{ selected_job_fair.district }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Students Registered</div>
+                    <div class="stat-value">{{ student_count }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Companies Present</div>
+                    <div class="stat-value">{{ company_count }}</div>
+                </div>
+            </div>
+
+            <!-- Company List -->
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0 fs-6">Companies & Attendance</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th class="text-center">Students Attended</th>
+                                    <th class="text-center">Shortlisted</th>
+                                    <th class="text-center">Placed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for company in companies %}
+                                <tr class="company-item" data-recruiter-id="{{ company.recruiter_id }}">
+                                    <td>{{ company.email }}</td>
+                                    <td class="text-center">{{ company.student_count }}</td>
+                                    <td class="text-center">{{ company.shortlisted }}</td>
+                                    <td class="text-center">{{ company.placed }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted p-3">No companies attended this job fair</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Details Modal -->
+            <div class="modal fade" id="studentModal" tabindex="-1" aria-labelledby="studentModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="studentModalLabel">Students</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="status-filter-container">
+                                <label class="form-label">Filter by Status:</label>
+                                <div class="status-filter">
+                                    <span class="status-badge status-all active" data-status="all">All</span>
+                                    <span class="status-badge status-pending" data-status="pending">Pending</span>
+                                    <span class="status-badge status-shortlisted" data-status="shortlisted">Shortlisted</span>
+                                    <span class="status-badge status-placed" data-status="placed">Placed</span>
+                                    <span class="status-badge status-rejected" data-status="rejected">Rejected</span>
+                                </div>
+                            </div>
+                            <div class="table-responsive mt-3">
+                                <table class="table table-striped table-sm" id="student-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Reg #</th>
+                                            <th>Name</th>
+                                            <th>College</th>
+                                            <th>Status</th>
+                                            <th>Visit Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="student-table-body">
+                                        <!-- Students will be loaded dynamically -->
+                                        <tr>
+                                            <td colspan="5" class="text-center">Select a company to view students</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5" id="no-job-fair-message">
+            <p>Please select a job fair to view analytics</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Job Fair selector
+            const jobFairSelect = document.getElementById('job-fair-select');
+            if (jobFairSelect) {
+                jobFairSelect.addEventListener('change', function() {
+                    const jobFairId = this.value;
+                    if (jobFairId) {
+                        window.location.href = `/nm/pteam/analytics?job_fair_id=${jobFairId}`;
+                    }
+                });
+            }
+
+            // Company item click handler
+            const companyItems = document.querySelectorAll('.company-item');
+            companyItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const recruiterId = this.getAttribute('data-recruiter-id');
+                    const jobFairId = jobFairSelect.value;
+                    const companyName = this.querySelector('td').textContent;
+                    
+                    // Update modal title
+                    document.getElementById('studentModalLabel').textContent = 
+                        `Students - ${companyName}`;
+                    
+                    // Show loading message
+                    document.getElementById('student-table-body').innerHTML = 
+                        '<tr><td colspan="5" class="text-center">Loading students...</td></tr>';
+                    
+                    // Load students for this company
+                    loadStudentsForCompany(jobFairId, recruiterId);
+                    
+                    // Show the modal
+                    const studentModal = new bootstrap.Modal(document.getElementById('studentModal'));
+                    studentModal.show();
+                });
+            });
+
+            // Status filter click handler
+            const statusBadges = document.querySelectorAll('.status-badge');
+            statusBadges.forEach(badge => {
+                badge.addEventListener('click', function() {
+                    // Remove active class from all badges
+                    statusBadges.forEach(b => b.classList.remove('active'));
+                    
+                    // Add active class to clicked badge
+                    this.classList.add('active');
+                    
+                    // Get the selected status
+                    const status = this.getAttribute('data-status');
+                    
+                    // Filter the student table
+                    filterStudentTable(status);
+                });
+            });
+        });
+
+        function loadStudentsForCompany(jobFairId, recruiterId) {
+            const tableBody = document.getElementById('student-table-body');
+            
+            fetch(`/nm/pteam/get-company-students/${jobFairId}/${recruiterId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = '';
+                    
+                    if (data.students.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No students found</td></tr>';
+                        return;
+                    }
+                    
+                    data.students.forEach(student => {
+                        const row = document.createElement('tr');
+                        row.setAttribute('data-status', student.status);
+                        
+                        // Create status badge with appropriate styling
+                        const statusBadgeClass = `badge status-${student.status}`;
+                        const statusText = student.status.charAt(0).toUpperCase() + student.status.slice(1);
+                        
+                        row.innerHTML = `
+                            <td>${student.registration_number}</td>
+                            <td>${student.name}</td>
+                            <td>${student.college}</td>
+                            <td><span class="${statusBadgeClass}">${statusText}</span></td>
+                            <td>${student.timestamp}</td>
+                        `;
+                        
+                        tableBody.appendChild(row);
+                    });
+                    
+                    // Reset filter to show all students
+                    document.querySelector('.status-badge.status-all').click();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading data</td></tr>';
+                });
+        }
+
+        function filterStudentTable(status) {
+            const rows = document.querySelectorAll('#student-table tbody tr');
+            
+            rows.forEach(row => {
+                const rowStatus = row.getAttribute('data-status');
+                if (!rowStatus) return; // Skip rows without status (like "no data" messages)
+                
+                if (status === 'all' || rowStatus === status) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
