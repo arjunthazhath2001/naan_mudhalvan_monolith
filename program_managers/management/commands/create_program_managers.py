@@ -8,14 +8,13 @@ class Command(BaseCommand):
         districts = [
             "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", 
             "Dharmapuri", "Dindigul", "Erode", "Kallakurichi", "Kancheepuram", 
-            "Karur", "Krishnagiri", "Madurai", "Mayiladuthurai", "Nagapattinam", 
-            "Namakkal", "Nilgiris", "Perambalur", "Pudukkottai", "Ramanathapuram", 
-            "Ranipet", "Salem", "Sivaganga", "Tenkasi", "Thanjavur", 
+            "Kanyakumari", "Karur", "Krishnagiri", "Madurai", "Mayiladuthurai", 
+            "Nagapattinam", "Namakkal", "Nilgiris", "Perambalur", "Pudukkottai", 
+            "Ramanathapuram", "Ranipet", "Salem", "Sivaganga", "Tenkasi", "Thanjavur", 
             "Theni", "Thoothukudi", "Tiruchirappalli", "Tirunelveli", "Tirupattur", 
             "Tiruppur", "Tiruvallur", "Tiruvannamalai", "Tiruvarur", "Vellore", 
             "Viluppuram", "Virudhunagar"
-        ]
-        
+        ]        
         for district in districts:
             username = f"manager_{district.lower().replace(' ', '_')}"
             password = f"pass_{district.lower().replace(' ', '_')}"
