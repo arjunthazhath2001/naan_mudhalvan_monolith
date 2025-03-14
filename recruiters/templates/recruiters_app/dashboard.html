@@ -75,6 +75,20 @@
             .btn-sm {
                 padding: 0.2rem 0.4rem;
                 font-size: 0.75rem;
+                min-width: 70px;
+                white-space: nowrap;
+            }
+            
+            /* Improve status dropdown width on mobile */
+            .status-select {
+                min-width: 100px;
+                font-size: 0.85rem;
+                padding: 0.25rem 0.5rem;
+            }
+            
+            /* Make sure checkboxes are properly sized and aligned */
+            .form-check-input {
+                margin-top: 0.2rem;
             }
         }
 
@@ -125,10 +139,6 @@
         
         /* Custom classes for responsive columns */
         .col-name {
-            min-width: 100px;
-        }
-        
-        .col-college {
             min-width: 120px;
         }
         
@@ -175,11 +185,14 @@
             font-weight: bold;
         }
         
-        /* Optimize timestamp display for mobile */
-        @media (max-width: 576px) {
-            .table th, .table td {
-                padding: 0.4rem 0.3rem;
-            }
+        /* Make the table more readable by adjusting row heights and spacing */
+        .table-sm td {
+            vertical-align: middle;
+        }
+        
+        /* Make the form selects more touch-friendly */
+        .form-select {
+            cursor: pointer;
         }
     </style>
 </head>
@@ -242,197 +255,193 @@
             </div>
         </div>
 
-<!-- Updated section for the student attendance in recruiters/templates/recruiters_app/dashboard.html -->
-
-<!-- Student Attendance -->
-<div class="card">
-    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fs-6">Student Attendance</h5>
-        {% if attendances %}
-        <button class="btn btn-warning btn-sm" id="mass-shortlist-btn">
-            Shortlist All Pending
-        </button>
-        {% endif %}
-    </div>
-    <div class="card-body p-0" id="attendance-container">
-        {% if attendances %}
-        <div class="table-responsive">
-            <table class="table table-striped table-sm mobile-table mb-0">
-                <thead>
-                    <tr>
-                        <th>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="select-all-checkbox">
-                            </div>
-                        </th>
-                        <th>Status</th>
-                        <th>Reg #</th>
-                        <th class="col-name">Name</th>
-                        <th class="col-college">College</th>
-                        <th>Time</th>
-                        <th>Resume</th>
-                        <th>Rounds</th>
-                    </tr>
-                </thead>
-                <tbody id="attendance-table-body">
-                    {% for attendance in attendances %}
-                    <tr data-student-reg="{{ attendance.student.registration_number }}" class="status-{{ attendance.status }}">
-                        <td>
-                            <div class="form-check">
-                                <input class="form-check-input student-checkbox" type="checkbox" 
-                                       value="{{ attendance.student.registration_number }}"
-                                       {% if attendance.status != 'pending' %}disabled{% endif %}>
-                            </div>
-                        </td>
-                        <td>
-                            <select class="form-select form-select-sm status-select" 
-                                    onchange="updateStudentStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}')">
-                                <option value="pending" {% if attendance.status == 'pending' %}selected{% endif %}>Pending</option>
-                                <option value="shortlisted" {% if attendance.status == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
-                                <option value="placed" {% if attendance.status == 'placed' %}selected{% endif %}>Placed</option>
-                                <option value="rejected" {% if attendance.status == 'rejected' %}selected{% endif %}>Rejected</option>
-                            </select>
-                        </td>
-                        <td>{{ attendance.student.registration_number }}</td>
-                        <td>{{ attendance.student.name }}</td>
-                        <td>{{ attendance.student.college_name }}</td>
-                        <td>{{ attendance.timestamp|date:"g:i A" }}</td>
-                        <td class="text-center">
-                            {% if attendance.student.resume %}
-                            <a href="{{ attendance.student.resume.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#roundsModal-{{ attendance.student.registration_number }}">
-                                Rounds
-                            </button>
-                            
-                            <!-- Rounds Modal -->
-                            <div class="modal fade" id="roundsModal-{{ attendance.student.registration_number }}" tabindex="-1" 
-                                    aria-labelledby="roundsModalLabel-{{ attendance.student.registration_number }}" 
-                                    aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="roundsModalLabel-{{ attendance.student.registration_number }}">
-                                                Interview Rounds: {{ attendance.student.name }}
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <ul class="nav nav-tabs" id="roundsTabs-{{ attendance.student.registration_number }}" role="tablist">
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link active" 
-                                                            id="round1-tab-{{ attendance.student.registration_number }}" 
-                                                            data-bs-toggle="tab" 
-                                                            data-bs-target="#round1-content-{{ attendance.student.registration_number }}" 
-                                                            type="button" role="tab" aria-selected="true">Round 1</button>
-                                                </li>
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link" 
-                                                            id="round2-tab-{{ attendance.student.registration_number }}" 
-                                                            data-bs-toggle="tab" 
-                                                            data-bs-target="#round2-content-{{ attendance.student.registration_number }}" 
-                                                            type="button" role="tab" aria-selected="false">Round 2</button>
-                                                </li>
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link" 
-                                                            id="round3-tab-{{ attendance.student.registration_number }}" 
-                                                            data-bs-toggle="tab" 
-                                                            data-bs-target="#round3-content-{{ attendance.student.registration_number }}" 
-                                                            type="button" role="tab" aria-selected="false">Round 3</button>
-                                                </li>
-                                                <li class="nav-item" role="presentation">
-                                                    <button class="nav-link" 
-                                                            id="notes-tab-{{ attendance.student.registration_number }}" 
-                                                            data-bs-toggle="tab" 
-                                                            data-bs-target="#notes-content-{{ attendance.student.registration_number }}" 
-                                                            type="button" role="tab" aria-selected="false">Notes</button>
-                                                </li>
-                                            </ul>
-                                            <div class="tab-content pt-3" id="roundsTabContent-{{ attendance.student.registration_number }}">
-                                                <!-- Round 1 -->
-                                                <div class="tab-pane fade show active" 
-                                                        id="round1-content-{{ attendance.student.registration_number }}" 
-                                                        role="tabpanel">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Round 1 Status:</label>
-                                                        <select class="form-select" 
-                                                                onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}', 'round_1')">
-                                                            <option value="not_started" {% if attendance.round_1 == 'not_started' %}selected{% endif %}>Not Started</option>
-                                                            <option value="passed" {% if attendance.round_1 == 'passed' %}selected{% endif %}>Passed</option>
-                                                            <option value="failed" {% if attendance.round_1 == 'failed' %}selected{% endif %}>Failed</option>
-                                                        </select>
+        <!-- Student Attendance -->
+        <div class="card">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fs-6">Student Attendance</h5>
+                {% if attendances %}
+                <button class="btn btn-warning btn-sm" id="mass-shortlist-btn">
+                    Shortlist All Pending
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0" id="attendance-container">
+                {% if attendances %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm mobile-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+                                    </div>
+                                </th>
+                                <th>Status</th>
+                                <th>Reg #</th>
+                                <th class="col-name">Name</th>
+                                <th>Rounds</th>
+                                <th>Time</th>
+                                <th>Resume</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-table-body">
+                            {% for attendance in attendances %}
+                            <tr data-student-reg="{{ attendance.student.registration_number }}" class="status-{{ attendance.status }}">
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input student-checkbox" type="checkbox" 
+                                               value="{{ attendance.student.registration_number }}"
+                                               {% if attendance.status != 'pending' %}disabled{% endif %}>
+                                    </div>
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm status-select" 
+                                            onchange="updateStudentStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}')">
+                                        <option value="pending" {% if attendance.status == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="shortlisted" {% if attendance.status == 'shortlisted' %}selected{% endif %}>Shortlisted</option>
+                                        <option value="placed" {% if attendance.status == 'placed' %}selected{% endif %}>Placed</option>
+                                        <option value="rejected" {% if attendance.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                    </select>
+                                </td>
+                                <td>{{ attendance.student.registration_number }}</td>
+                                <td>{{ attendance.student.name }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#roundsModal-{{ attendance.student.registration_number }}">
+                                        Rounds
+                                    </button>
+                                    
+                                    <!-- Rounds Modal -->
+                                    <div class="modal fade" id="roundsModal-{{ attendance.student.registration_number }}" tabindex="-1" 
+                                            aria-labelledby="roundsModalLabel-{{ attendance.student.registration_number }}" 
+                                            aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="roundsModalLabel-{{ attendance.student.registration_number }}">
+                                                        Interview Rounds: {{ attendance.student.name }}
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <ul class="nav nav-tabs" id="roundsTabs-{{ attendance.student.registration_number }}" role="tablist">
+                                                        <li class="nav-item" role="presentation">
+                                                            <button class="nav-link active" 
+                                                                    id="round1-tab-{{ attendance.student.registration_number }}" 
+                                                                    data-bs-toggle="tab" 
+                                                                    data-bs-target="#round1-content-{{ attendance.student.registration_number }}" 
+                                                                    type="button" role="tab" aria-selected="true">Round 1</button>
+                                                        </li>
+                                                        <li class="nav-item" role="presentation">
+                                                            <button class="nav-link" 
+                                                                    id="round2-tab-{{ attendance.student.registration_number }}" 
+                                                                    data-bs-toggle="tab" 
+                                                                    data-bs-target="#round2-content-{{ attendance.student.registration_number }}" 
+                                                                    type="button" role="tab" aria-selected="false">Round 2</button>
+                                                        </li>
+                                                        <li class="nav-item" role="presentation">
+                                                            <button class="nav-link" 
+                                                                    id="round3-tab-{{ attendance.student.registration_number }}" 
+                                                                    data-bs-toggle="tab" 
+                                                                    data-bs-target="#round3-content-{{ attendance.student.registration_number }}" 
+                                                                    type="button" role="tab" aria-selected="false">Round 3</button>
+                                                        </li>
+                                                        <li class="nav-item" role="presentation">
+                                                            <button class="nav-link" 
+                                                                    id="notes-tab-{{ attendance.student.registration_number }}" 
+                                                                    data-bs-toggle="tab" 
+                                                                    data-bs-target="#notes-content-{{ attendance.student.registration_number }}" 
+                                                                    type="button" role="tab" aria-selected="false">Notes</button>
+                                                        </li>
+                                                    </ul>
+                                                    <div class="tab-content pt-3" id="roundsTabContent-{{ attendance.student.registration_number }}">
+                                                        <!-- Round 1 -->
+                                                        <div class="tab-pane fade show active" 
+                                                                id="round1-content-{{ attendance.student.registration_number }}" 
+                                                                role="tabpanel">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Round 1 Status:</label>
+                                                                <select class="form-select" 
+                                                                        onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}', 'round_1')">
+                                                                    <option value="not_started" {% if attendance.round_1 == 'not_started' %}selected{% endif %}>Not Started</option>
+                                                                    <option value="passed" {% if attendance.round_1 == 'passed' %}selected{% endif %}>Passed</option>
+                                                                    <option value="failed" {% if attendance.round_1 == 'failed' %}selected{% endif %}>Failed</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Round 2 -->
+                                                        <div class="tab-pane fade" 
+                                                                id="round2-content-{{ attendance.student.registration_number }}" 
+                                                                role="tabpanel">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Round 2 Status:</label>
+                                                                <select class="form-select" 
+                                                                        onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}', 'round_2')">
+                                                                    <option value="not_started" {% if attendance.round_2 == 'not_started' %}selected{% endif %}>Not Started</option>
+                                                                    <option value="passed" {% if attendance.round_2 == 'passed' %}selected{% endif %}>Passed</option>
+                                                                    <option value="failed" {% if attendance.round_2 == 'failed' %}selected{% endif %}>Failed</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Round 3 -->
+                                                        <div class="tab-pane fade" 
+                                                                id="round3-content-{{ attendance.student.registration_number }}" 
+                                                                role="tabpanel">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Round 3 Status:</label>
+                                                                <select class="form-select" 
+                                                                        onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}', 'round_3')">
+                                                                    <option value="not_started" {% if attendance.round_3 == 'not_started' %}selected{% endif %}>Not Started</option>
+                                                                    <option value="passed" {% if attendance.round_3 == 'passed' %}selected{% endif %}>Passed</option>
+                                                                    <option value="failed" {% if attendance.round_3 == 'failed' %}selected{% endif %}>Failed</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Notes -->
+                                                        <div class="tab-pane fade" 
+                                                                id="notes-content-{{ attendance.student.registration_number }}" 
+                                                                role="tabpanel">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Interviewer Notes:</label>
+                                                                <textarea 
+                                                                    class="form-control" 
+                                                                    rows="5" 
+                                                                    id="notes-{{ attendance.student.registration_number }}"
+                                                                    placeholder="Enter notes about this candidate..."
+                                                                    onblur="updateStudentNotes(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}')">{{ attendance.notes|default:'' }}</textarea>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                
-                                                <!-- Round 2 -->
-                                                <div class="tab-pane fade" 
-                                                        id="round2-content-{{ attendance.student.registration_number }}" 
-                                                        role="tabpanel">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Round 2 Status:</label>
-                                                        <select class="form-select" 
-                                                                onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}', 'round_2')">
-                                                            <option value="not_started" {% if attendance.round_2 == 'not_started' %}selected{% endif %}>Not Started</option>
-                                                            <option value="passed" {% if attendance.round_2 == 'passed' %}selected{% endif %}>Passed</option>
-                                                            <option value="failed" {% if attendance.round_2 == 'failed' %}selected{% endif %}>Failed</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- Round 3 -->
-                                                <div class="tab-pane fade" 
-                                                        id="round3-content-{{ attendance.student.registration_number }}" 
-                                                        role="tabpanel">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Round 3 Status:</label>
-                                                        <select class="form-select" 
-                                                                onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}', 'round_3')">
-                                                            <option value="not_started" {% if attendance.round_3 == 'not_started' %}selected{% endif %}>Not Started</option>
-                                                            <option value="passed" {% if attendance.round_3 == 'passed' %}selected{% endif %}>Passed</option>
-                                                            <option value="failed" {% if attendance.round_3 == 'failed' %}selected{% endif %}>Failed</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- Notes -->
-                                                <div class="tab-pane fade" 
-                                                        id="notes-content-{{ attendance.student.registration_number }}" 
-                                                        role="tabpanel">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Interviewer Notes:</label>
-                                                        <textarea 
-                                                            class="form-control" 
-                                                            rows="5" 
-                                                            id="notes-{{ attendance.student.registration_number }}"
-                                                            placeholder="Enter notes about this candidate..."
-                                                            onblur="updateStudentNotes(this, '{{ selected_job_fair.job_fair_id }}', '{{ attendance.student.registration_number }}')">{{ attendance.notes|default:'' }}</textarea>
-                                                    </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <p class="text-center text-muted p-3" id="no-attendance-message">No students have visited your booth yet.</p>
-        {% endif %}
-    </div>
-</div>        
+                                </td>
+                                <td>{{ attendance.timestamp|date:"g:i A" }}</td>
+                                <td class="text-center">
+                                    {% if attendance.student.resume %}
+                                    <a href="{{ attendance.student.resume.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center text-muted p-3" id="no-attendance-message">No students have visited your booth yet.</p>
+                {% endif %}
+            </div>
+        </div>        
         <!-- Logout Button -->
         <div class="logout-container">
             <a href="{% url 'recruiter_logout' %}" class="btn btn-outline-danger">Logout</a>
@@ -604,13 +613,17 @@
                         <table class="table table-striped table-sm mobile-table mb-0">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+                                        </div>
+                                    </th>
                                     <th>Status</th>
                                     <th>Reg #</th>
                                     <th class="col-name">Name</th>
-                                    <th class="col-college">College</th>
+                                    <th>Rounds</th>
                                     <th>Time</th>
                                     <th>Resume</th>
-                                    <th>Rounds</th>
                                 </tr>
                             </thead>
                             <tbody id="attendance-table-body">
@@ -618,6 +631,19 @@
                         </table>
                     </div>
                 `;
+                
+                // Add the Select All checkbox event listener
+                const selectAllCheckbox = document.getElementById('select-all-checkbox');
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.addEventListener('change', function() {
+                        const isChecked = this.checked;
+                        const studentCheckboxes = document.querySelectorAll('.student-checkbox:not(:disabled)');
+                        
+                        studentCheckboxes.forEach(checkbox => {
+                            checkbox.checked = isChecked;
+                        });
+                    });
+                }
             }
             
             // Get the table body again in case it was just created
@@ -633,6 +659,11 @@
             
             newRow.innerHTML = `
                 <td>
+                    <div class="form-check">
+                        <input class="form-check-input student-checkbox" type="checkbox" value="${data.student.registration_number}">
+                    </div>
+                </td>
+                <td>
                     <select class="form-select form-select-sm status-select" 
                             onchange="updateStudentStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}')">
                         <option value="pending" selected>Pending</option>
@@ -643,13 +674,6 @@
                 </td>
                 <td>${data.student.registration_number}</td>
                 <td>${data.student.name}</td>
-                <td>${data.student.college_name}</td>
-                <td>${data.timestamp}</td>
-                <td class="text-center">
-                    ${data.student.has_resume ? 
-                        `<a href="${data.student.resume_url}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>` : 
-                        '-'}
-                </td>
                 <td>
                     <button type="button" class="btn btn-sm btn-outline-primary" 
                             data-bs-toggle="modal" 
@@ -710,7 +734,6 @@
                                                 <select class="form-select" 
                                                         onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}', 'round_1')">
                                                     <option value="not_started" selected>Not Started</option>
-                                                    <option value="in_progress">In Progress</option>
                                                     <option value="passed">Passed</option>
                                                     <option value="failed">Failed</option>
                                                 </select>
@@ -726,7 +749,6 @@
                                                 <select class="form-select" 
                                                         onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}', 'round_2')">
                                                     <option value="not_started" selected>Not Started</option>
-                                                    <option value="in_progress">In Progress</option>
                                                     <option value="passed">Passed</option>
                                                     <option value="failed">Failed</option>
                                                 </select>
@@ -742,7 +764,6 @@
                                                 <select class="form-select" 
                                                         onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}', 'round_3')">
                                                     <option value="not_started" selected>Not Started</option>
-                                                    <option value="in_progress">In Progress</option>
                                                     <option value="passed">Passed</option>
                                                     <option value="failed">Failed</option>
                                                 </select>
@@ -772,6 +793,12 @@
                         </div>
                     </div>
                 </td>
+                <td>${data.timestamp}</td>
+                <td class="text-center">
+                    ${data.student.has_resume ? 
+                        `<a href="${data.student.resume_url}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>` : 
+                        '-'}
+                </td>
             `;
             
             // Add the new row to the table
@@ -783,355 +810,141 @@
                 newRow.style.transition = 'background-color 1s ease';
                 newRow.style.backgroundColor = '';
             }, 100);
+            
+            // If this is the first student, add the "Shortlist All" button
+            if (updatedTableBody.childElementCount === 1) {
+                const cardHeader = document.querySelector('.card-header');
+                if (cardHeader && !document.getElementById('mass-shortlist-btn')) {
+                    const shortlistBtn = document.createElement('button');
+                    shortlistBtn.id = 'mass-shortlist-btn';
+                    shortlistBtn.className = 'btn btn-warning btn-sm';
+                    shortlistBtn.textContent = 'Shortlist All Pending';
+                    shortlistBtn.addEventListener('click', function() {
+                        const selectedStudents = document.querySelectorAll('.student-checkbox:checked');
+                        
+                        if (selectedStudents.length === 0) {
+                            alert('Please select at least one student to shortlist.');
+                            return;
+                        }
+                        
+                        if (confirm(`Are you sure you want to shortlist ${selectedStudents.length} student(s)?`)) {
+                            const regNumbers = Array.from(selectedStudents).map(checkbox => checkbox.value);
+                            shortlistMultipleStudents('{{ selected_job_fair.job_fair_id }}', regNumbers);
+                        }
+                    });
+                    
+                    cardHeader.appendChild(shortlistBtn);
+                }
+            }
         }
 
         // Handle Select All checkbox
-document.addEventListener('DOMContentLoaded', function() {
-    // Select All checkbox functionality
-    const selectAllCheckbox = document.getElementById('select-all-checkbox');
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked;
-            const studentCheckboxes = document.querySelectorAll('.student-checkbox:not(:disabled)');
-            
-            studentCheckboxes.forEach(checkbox => {
-                checkbox.checked = isChecked;
-            });
-        });
-    }
-    
-    // Mass shortlist button functionality
-    const massShortlistBtn = document.getElementById('mass-shortlist-btn');
-    if (massShortlistBtn) {
-        massShortlistBtn.addEventListener('click', function() {
-            // First, check if any students are selected
-            const selectedStudents = document.querySelectorAll('.student-checkbox:checked');
-            
-            if (selectedStudents.length === 0) {
-                alert('Please select at least one student to shortlist.');
-                return;
-            }
-            
-            // Confirm action
-            if (confirm(`Are you sure you want to shortlist ${selectedStudents.length} student(s)?`)) {
-                // Get the registration numbers of selected students
-                const regNumbers = Array.from(selectedStudents).map(checkbox => checkbox.value);
-                
-                // Call shortlistMultipleStudents function
-                shortlistMultipleStudents('{{ selected_job_fair.job_fair_id }}', regNumbers);
-            }
-        });
-    }
-});
-
-// Function to shortlist multiple students at once
-function shortlistMultipleStudents(jobFairId, regNumbers) {
-    // Create form data
-    const formData = new FormData();
-    formData.append('job_fair_id', jobFairId);
-    formData.append('reg_numbers', JSON.stringify(regNumbers));
-    
-    // Show loading indicator or disable button
-    const massShortlistBtn = document.getElementById('mass-shortlist-btn');
-    const originalBtnText = massShortlistBtn.innerHTML;
-    massShortlistBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-    massShortlistBtn.disabled = true;
-    
-    // Send AJAX request
-    fetch('/nm/recruiters/shortlist-multiple/', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Update UI for each shortlisted student
-            regNumbers.forEach(regNumber => {
-                // Find the row
-                const row = document.querySelector(`tr[data-student-reg="${regNumber}"]`);
-                if (row) {
-                    // Update row class
-                    row.className = '';
-                    row.classList.add('status-shortlisted');
-                    
-                    // Update select dropdown
-                    const statusSelect = row.querySelector('.status-select');
-                    if (statusSelect) {
-                        statusSelect.value = 'shortlisted';
-                    }
-                    
-                    // Disable checkbox
-                    const checkbox = row.querySelector('.student-checkbox');
-                    if (checkbox) {
-                        checkbox.checked = false;
-                        checkbox.disabled = true;
-                    }
-                }
-            });
-            
-            // Show success message
-            alert(`Successfully shortlisted ${regNumbers.length} student(s).`);
-            
-            // Uncheck "Select All" checkbox
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select All checkbox functionality
             const selectAllCheckbox = document.getElementById('select-all-checkbox');
             if (selectAllCheckbox) {
-                selectAllCheckbox.checked = false;
-            }
-        } else {
-            // Show error message
-            alert(`Error: ${data.error || 'Failed to shortlist students. Please try again.'}`);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-    })
-    .finally(() => {
-        // Restore button state
-        massShortlistBtn.innerHTML = originalBtnText;
-        massShortlistBtn.disabled = false;
-    });
-}
-
-// Update handleNewAttendance function to include checkbox
-function handleNewAttendance(data) {
-    const tableBody = document.querySelector('#attendance-table-body');
-    const noAttendanceMsg = document.querySelector('#no-attendance-message');
-    
-    // If there was a "no students" message, remove it and create table
-    if (noAttendanceMsg) {
-        const attendanceContainer = document.getElementById('attendance-container');
-        attendanceContainer.innerHTML = `
-            <div class="table-responsive">
-                <table class="table table-striped table-sm mobile-table mb-0">
-                    <thead>
-                        <tr>
-                            <th>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="select-all-checkbox">
-                                </div>
-                            </th>
-                            <th>Status</th>
-                            <th>Reg #</th>
-                            <th class="col-name">Name</th>
-                            <th class="col-college">College</th>
-                            <th>Time</th>
-                            <th>Resume</th>
-                            <th>Rounds</th>
-                        </tr>
-                    </thead>
-                    <tbody id="attendance-table-body">
-                    </tbody>
-                </table>
-            </div>
-        `;
-        
-        // Add the Select All checkbox event listener
-        const selectAllCheckbox = document.getElementById('select-all-checkbox');
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                const isChecked = this.checked;
-                const studentCheckboxes = document.querySelectorAll('.student-checkbox:not(:disabled)');
-                
-                studentCheckboxes.forEach(checkbox => {
-                    checkbox.checked = isChecked;
+                selectAllCheckbox.addEventListener('change', function() {
+                    const isChecked = this.checked;
+                    const studentCheckboxes = document.querySelectorAll('.student-checkbox:not(:disabled)');
+                    
+                    studentCheckboxes.forEach(checkbox => {
+                        checkbox.checked = isChecked;
+                    });
                 });
+            }
+            
+            // Mass shortlist button functionality
+            const massShortlistBtn = document.getElementById('mass-shortlist-btn');
+            if (massShortlistBtn) {
+                massShortlistBtn.addEventListener('click', function() {
+                    // First, check if any students are selected
+                    const selectedStudents = document.querySelectorAll('.student-checkbox:checked');
+                    
+                    if (selectedStudents.length === 0) {
+                        alert('Please select at least one student to shortlist.');
+                        return;
+                    }
+                    
+                    // Confirm action
+                    if (confirm(`Are you sure you want to shortlist ${selectedStudents.length} student(s)?`)) {
+                        // Get the registration numbers of selected students
+                        const regNumbers = Array.from(selectedStudents).map(checkbox => checkbox.value);
+                        
+                        // Call shortlistMultipleStudents function
+                        shortlistMultipleStudents('{{ selected_job_fair.job_fair_id }}', regNumbers);
+                    }
+                });
+            }
+        });
+
+        // Function to shortlist multiple students at once
+        function shortlistMultipleStudents(jobFairId, regNumbers) {
+            // Create form data
+            const formData = new FormData();
+            formData.append('job_fair_id', jobFairId);
+            formData.append('reg_numbers', JSON.stringify(regNumbers));
+            
+            // Show loading indicator or disable button
+            const massShortlistBtn = document.getElementById('mass-shortlist-btn');
+            const originalBtnText = massShortlistBtn.innerHTML;
+            massShortlistBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            massShortlistBtn.disabled = true;
+            
+            // Send AJAX request
+            fetch('/nm/recruiters/shortlist-multiple/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI for each shortlisted student
+                    regNumbers.forEach(regNumber => {
+                        // Find the row
+                        const row = document.querySelector(`tr[data-student-reg="${regNumber}"]`);
+                        if (row) {
+                            // Update row class
+                            row.className = '';
+                            row.classList.add('status-shortlisted');
+                            
+                            // Update select dropdown
+                            const statusSelect = row.querySelector('.status-select');
+                            if (statusSelect) {
+                                statusSelect.value = 'shortlisted';
+                            }
+                            
+                            // Disable checkbox
+                            const checkbox = row.querySelector('.student-checkbox');
+                            if (checkbox) {
+                                checkbox.checked = false;
+                                checkbox.disabled = true;
+                            }
+                        }
+                    });
+                    
+                    // Show success message
+                    alert(`Successfully shortlisted ${regNumbers.length} student(s).`);
+                    
+                    // Uncheck "Select All" checkbox
+                    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = false;
+                    }
+                } else {
+                    // Show error message
+                    alert(`Error: ${data.error || 'Failed to shortlist students. Please try again.'}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            })
+            .finally(() => {
+                // Restore button state
+                massShortlistBtn.innerHTML = originalBtnText;
+                massShortlistBtn.disabled = false;
             });
         }
-    }
-    
-    // Get the table body again in case it was just created
-    const updatedTableBody = document.querySelector('#attendance-table-body');
-    
-    // Create a new row
-    const newRow = document.createElement('tr');
-    newRow.setAttribute('data-student-reg', data.student.registration_number);
-    newRow.classList.add('status-pending');
-    
-    // Generate a unique ID for the modal
-    const modalId = `roundsModal-${data.student.registration_number}`;
-    
-    newRow.innerHTML = `
-        <td>
-            <div class="form-check">
-                <input class="form-check-input student-checkbox" type="checkbox" value="${data.student.registration_number}">
-            </div>
-        </td>
-        <td>
-            <select class="form-select form-select-sm status-select" 
-                    onchange="updateStudentStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}')">
-                <option value="pending" selected>Pending</option>
-                <option value="shortlisted">Shortlisted</option>
-                <option value="placed">Placed</option>
-                <option value="rejected">Rejected</option>
-            </select>
-        </td>
-        <td>${data.student.registration_number}</td>
-        <td>${data.student.name}</td>
-        <td>${data.student.college_name}</td>
-        <td>${data.timestamp}</td>
-        <td class="text-center">
-            ${data.student.has_resume ? 
-                `<a href="${data.student.resume_url}" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>` : 
-                '-'}
-        </td>
-        <td>
-            <button type="button" class="btn btn-sm btn-outline-primary" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#${modalId}">
-                Rounds
-            </button>
-            
-            <!-- Rounds Modal -->
-            <div class="modal fade" id="${modalId}" tabindex="-1" 
-                 aria-labelledby="roundsModalLabel-${data.student.registration_number}" 
-                 aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="roundsModalLabel-${data.student.registration_number}">
-                                Interview Rounds: ${data.student.name}
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <ul class="nav nav-tabs" id="roundsTabs-${data.student.registration_number}" role="tablist">
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" 
-                                            id="round1-tab-${data.student.registration_number}" 
-                                            data-bs-toggle="tab" 
-                                            data-bs-target="#round1-content-${data.student.registration_number}" 
-                                            type="button" role="tab" aria-selected="true">Round 1</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" 
-                                            id="round2-tab-${data.student.registration_number}" 
-                                            data-bs-toggle="tab" 
-                                            data-bs-target="#round2-content-${data.student.registration_number}" 
-                                            type="button" role="tab" aria-selected="false">Round 2</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" 
-                                            id="round3-tab-${data.student.registration_number}" 
-                                            data-bs-toggle="tab" 
-                                            data-bs-target="#round3-content-${data.student.registration_number}" 
-                                            type="button" role="tab" aria-selected="false">Round 3</button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" 
-                                            id="notes-tab-${data.student.registration_number}" 
-                                            data-bs-toggle="tab" 
-                                            data-bs-target="#notes-content-${data.student.registration_number}" 
-                                            type="button" role="tab" aria-selected="false">Notes</button>
-                                </li>
-                            </ul>
-                            <div class="tab-content pt-3" id="roundsTabContent-${data.student.registration_number}">
-                                <!-- Round 1 -->
-                                <div class="tab-pane fade show active" 
-                                     id="round1-content-${data.student.registration_number}" 
-                                     role="tabpanel">
-                                    <div class="mb-3">
-                                        <label class="form-label">Round 1 Status:</label>
-                                        <select class="form-select" 
-                                                onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}', 'round_1')">
-                                            <option value="not_started" selected>Not Started</option>
-                                            <option value="passed">Passed</option>
-                                            <option value="failed">Failed</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <!-- Round 2 -->
-                                <div class="tab-pane fade" 
-                                     id="round2-content-${data.student.registration_number}" 
-                                     role="tabpanel">
-                                    <div class="mb-3">
-                                        <label class="form-label">Round 2 Status:</label>
-                                        <select class="form-select" 
-                                                onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}', 'round_2')">
-                                            <option value="not_started" selected>Not Started</option>
-                                            <option value="passed">Passed</option>
-                                            <option value="failed">Failed</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <!-- Round 3 -->
-                                <div class="tab-pane fade" 
-                                     id="round3-content-${data.student.registration_number}" 
-                                     role="tabpanel">
-                                    <div class="mb-3">
-                                        <label class="form-label">Round 3 Status:</label>
-                                        <select class="form-select" 
-                                                onchange="updateRoundStatus(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}', 'round_3')">
-                                            <option value="not_started" selected>Not Started</option>
-                                            <option value="passed">Passed</option>
-                                            <option value="failed">Failed</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <!-- Notes -->
-                                <div class="tab-pane fade" 
-                                     id="notes-content-${data.student.registration_number}" 
-                                     role="tabpanel">
-                                    <div class="mb-3">
-                                        <label class="form-label">Interviewer Notes:</label>
-                                        <textarea 
-                                            class="form-control" 
-                                            rows="5" 
-                                            id="notes-${data.student.registration_number}"
-                                            placeholder="Enter notes about this candidate..."
-                                            onblur="updateStudentNotes(this, '{{ selected_job_fair.job_fair_id }}', '${data.student.registration_number}')"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </td>
-    `;
-    
-    // Add the new row to the table
-    updatedTableBody.insertBefore(newRow, updatedTableBody.firstChild);
-    
-    // Flash effect for the new row
-    newRow.style.backgroundColor = '#e3f2fd';
-    setTimeout(function() {
-        newRow.style.transition = 'background-color 1s ease';
-        newRow.style.backgroundColor = '';
-    }, 100);
-    
-    // If this is the first student, add the "Shortlist All" button
-    if (updatedTableBody.childElementCount === 1) {
-        const cardHeader = document.querySelector('.card-header');
-        if (cardHeader && !document.getElementById('mass-shortlist-btn')) {
-            const shortlistBtn = document.createElement('button');
-            shortlistBtn.id = 'mass-shortlist-btn';
-            shortlistBtn.className = 'btn btn-warning btn-sm';
-            shortlistBtn.textContent = 'Shortlist All Pending';
-            shortlistBtn.addEventListener('click', function() {
-                const selectedStudents = document.querySelectorAll('.student-checkbox:checked');
-                
-                if (selectedStudents.length === 0) {
-                    alert('Please select at least one student to shortlist.');
-                    return;
-                }
-                
-                if (confirm(`Are you sure you want to shortlist ${selectedStudents.length} student(s)?`)) {
-                    const regNumbers = Array.from(selectedStudents).map(checkbox => checkbox.value);
-                    shortlistMultipleStudents('{{ selected_job_fair.job_fair_id }}', regNumbers);
-                }
-            });
-            
-            cardHeader.appendChild(shortlistBtn);
-        }
-    }
-}
     </script>
 </body>
 </html>
