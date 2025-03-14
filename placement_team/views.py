@@ -5,9 +5,12 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Q
 
 from recruiters.models import Recruiter
 from .models import Job_fairs, RecruiterJobFair
+from students.models import StudentRegistration, RecruiterStudentAttendance
+
 import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
