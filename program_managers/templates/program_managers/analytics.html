@@ -512,18 +512,22 @@
 
         function filterStudentTable(status, round) {
             const rows = document.querySelectorAll('#student-table tbody tr');
-            
+
             rows.forEach(row => {
                 // Skip rows without data attributes (like "no data" messages)
                 if (!row.hasAttribute('data-status')) return;
-                
+
                 const rowStatus = row.getAttribute('data-status');
-                const rowCurrentRound = row.getAttribute('data-current-round');
-                const rowHighestRound = row.getAttribute('data-highest-round');
-                
+
                 // Handle status filtering
                 const statusMatch = status === 'all' || rowStatus === status;
-                
+
+                // Get the current round of the student
+                const currentRound = parseInt(row.getAttribute('data-current-round') || '1');
+
+                // Get round history from data attribute
+                const roundHistory = JSON.parse(row.getAttribute('data-round-history') || '[]');
+
                 // Handle round filtering - this is the key change
                 let roundMatch = false;
                 
@@ -532,12 +536,15 @@
                     roundMatch = true;
                 } else {
                     const roundNumber = parseInt(round);
-                    
-                    // Get round history from data attribute
-                    const roundHistory = JSON.parse(row.getAttribute('data-round-history') || '[]');
-                    
-                    // Check if student participated in this round
-                    roundMatch = roundHistory.some(r => r.round_number === roundNumber);
+
+                    // Check if student ACTUALLY participated in this round
+                    // A student participates in a round if they have a status of 'passed' or 'failed' for that round
+                    // or if it's their current round and status is 'pending'
+                    roundMatch = roundHistory.some(r => {
+                        return r.round_number === roundNumber && 
+                            (r.status === 'passed' || r.status === 'failed' || 
+                                (r.status === 'pending' && currentRound >= roundNumber));
+                    });
                 }
                 
                 // Show/hide row based on combined filters
@@ -548,7 +555,6 @@
                 }
             });
         }
-    
 
     </script>
 </body>
