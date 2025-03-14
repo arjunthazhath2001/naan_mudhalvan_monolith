@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "students",
     "recruiters",
     "channels"
+    "program_managers",
 ]
 
 MIDDLEWARE = [
