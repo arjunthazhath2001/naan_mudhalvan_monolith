@@ -1,16 +1,24 @@
+# program_managers/views.py
 import os
 import random
 import string
 from django.contrib import messages 
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 
 from .models import ProgramManager
 from recruiters.models import Recruiter
 from placement_team.models import Job_fairs, RecruiterJobFair
 from students.models import StudentRegistration, RecruiterStudentAttendance
+
+def program_manager_login_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if 'program_manager_id' not in request.session:
+            messages.error(request, "Please log in to access this page.")
+            return redirect('program_manager_login')
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 def login_view(request):
     if 'program_manager_id' in request.session:
@@ -32,7 +40,19 @@ def login_view(request):
     
     return render(request, 'program_managers/login.html')
 
-@login_required(login_url='program_manager_login')
+def logout_view(request):
+    # Clear all session data related to program manager
+    if 'program_manager_id' in request.session:
+        del request.session['program_manager_id']
+    if 'program_manager_username' in request.session:
+        del request.session['program_manager_username']
+    if 'program_manager_district' in request.session:
+        del request.session['program_manager_district']
+    
+    messages.success(request, "You have been logged out successfully.")
+    return redirect('program_manager_login')
+
+@program_manager_login_required
 def index(request):
     district = request.session.get('program_manager_district')
     # Get job fairs specific to the manager's district
@@ -43,7 +63,7 @@ def index(request):
         'district': district
     })
 
-@login_required(login_url='program_manager_login')
+@program_manager_login_required
 def companies(request):
     district = request.session.get('program_manager_district')
     job_fairs = Job_fairs.objects.filter(district=district)
@@ -102,7 +122,7 @@ def companies(request):
         'district': district
     })
 
-@login_required(login_url='program_manager_login')
+@program_manager_login_required
 def analytics(request):
     district = request.session.get('program_manager_district')
     job_fairs = Job_fairs.objects.filter(district=district).order_by('-date_of_creation')
@@ -161,6 +181,9 @@ def analytics(request):
         'companies': companies,
         'district': district
     })
+
+
+
 
 def get_recruiters_for_job_fair(request, job_fair_id):
     """Get recruiters for a specific job fair"""

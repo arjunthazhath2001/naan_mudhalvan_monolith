@@ -128,20 +128,12 @@
 
         <!-- Logout Button -->
         <div class="d-flex justify-content-center mt-4">
-            <a href="#" class="btn btn-outline-danger" onclick="logoutConfirm(event)">Logout</a>
+            <a href="{% url 'program_manager_logout' %}" class="btn btn-outline-danger">Logout</a>
         </div>
     </div>
 
     <!-- Bootstrap JS (optional, for future interactions) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-        function logoutConfirm(event) {
-            event.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                window.location.href = "{% url 'program_manager_login' %}";
-            }
-        }
-    </script>
 </body>
 </html>

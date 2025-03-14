@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path("pmanager/login", views.login_view, name="program_manager_login"),
+    path("pmanager/logout", views.logout_view, name="program_manager_logout"),
     path("pmanager/index", views.index, name="program_manager_index"),
     path("pmanager/companies", views.companies, name="program_manager_companies"),
     path("pmanager/analytics", views.analytics, name="program_manager_analytics"),
