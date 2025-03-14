@@ -304,3 +304,5 @@ def get_company_students(request, job_fair_id, recruiter_id):
         return JsonResponse({'error': 'Job fair not found or not in your district'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
