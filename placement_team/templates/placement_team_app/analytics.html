@@ -298,7 +298,7 @@
                 </div>
             </div>
 
-            <!-- Student Details Modal -->
+            <!-- Modify the Student Details Modal in placement_team/templates/placement_team_app/analytics.html -->
             <div class="modal fade" id="studentModal" tabindex="-1" aria-labelledby="studentModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -307,14 +307,28 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <div class="status-filter-container">
-                                <label class="form-label">Filter by Status:</label>
-                                <div class="status-filter">
-                                    <span class="status-badge status-all active" data-status="all">All</span>
-                                    <span class="status-badge status-pending" data-status="pending">Pending</span>
-                                    <span class="status-badge status-shortlisted" data-status="shortlisted">Shortlisted</span>
-                                    <span class="status-badge status-placed" data-status="placed">Placed</span>
-                                    <span class="status-badge status-rejected" data-status="rejected">Rejected</span>
+                            <div class="row mb-3">
+                                <!-- Round Selection Dropdown -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Filter by Round:</label>
+                                    <select class="form-select" id="round-filter">
+                                        <option value="all" selected>All Rounds</option>
+                                        <option value="1">Round 1</option>
+                                        <option value="2">Round 2</option>
+                                        <option value="3">Round 3</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Status Selection -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Filter by Status:</label>
+                                    <div class="status-filter">
+                                        <span class="status-badge status-all active" data-status="all">All</span>
+                                        <span class="status-badge status-pending" data-status="pending">Pending</span>
+                                        <span class="status-badge status-shortlisted" data-status="next">Next Round</span>
+                                        <span class="status-badge status-placed" data-status="placed">Placed</span>
+                                        <span class="status-badge status-rejected" data-status="rejected">Rejected</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="table-responsive mt-3">
@@ -325,13 +339,14 @@
                                             <th>Name</th>
                                             <th>College</th>
                                             <th>Status</th>
+                                            <th>Round</th>
                                             <th>Visit Time</th>
                                         </tr>
                                     </thead>
                                     <tbody id="student-table-body">
                                         <!-- Students will be loaded dynamically -->
                                         <tr>
-                                            <td colspan="5" class="text-center">Select a company to view students</td>
+                                            <td colspan="6" class="text-center">Select a company to view students</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -343,8 +358,8 @@
                     </div>
                 </div>
             </div>
-        </div>
-        {% else %}
+
+            {% else %}
         <div class="text-center text-muted py-5" id="no-job-fair-message">
             <p>Please select a job fair to view analytics</p>
         </div>
@@ -367,6 +382,26 @@
                     }
                 });
             }
+
+
+                    
+            // Add event listener for the round filter dropdown
+            const roundFilter = document.getElementById('round-filter');
+            if (roundFilter) {
+                roundFilter.addEventListener('change', function() {
+                    // Get the selected round
+                    const selectedRound = this.value;
+                    
+                    // Get the selected status
+                    const activeStatusBadge = document.querySelector('.status-badge.active');
+                    const selectedStatus = activeStatusBadge ? activeStatusBadge.getAttribute('data-status') : 'all';
+                    
+                    // Apply both filters
+                    filterStudentTable(selectedStatus, selectedRound);
+                });
+            }
+
+
 
             // Company item click handler
             const companyItems = document.querySelectorAll('.company-item');
@@ -393,7 +428,6 @@
                 });
             });
 
-            // Status filter click handler
             const statusBadges = document.querySelectorAll('.status-badge');
             statusBadges.forEach(badge => {
                 badge.addEventListener('click', function() {
@@ -404,13 +438,17 @@
                     this.classList.add('active');
                     
                     // Get the selected status
-                    const status = this.getAttribute('data-status');
+                    const selectedStatus = this.getAttribute('data-status');
                     
-                    // Filter the student table
-                    filterStudentTable(status);
+                    // Get the selected round
+                    const selectedRound = document.getElementById('round-filter').value;
+                    
+                    // Apply both filters
+                    filterStudentTable(selectedStatus, selectedRound);
                 });
             });
         });
+
 
         function loadStudentsForCompany(jobFairId, recruiterId) {
             const tableBody = document.getElementById('student-table-body');
@@ -421,13 +459,14 @@
                     tableBody.innerHTML = '';
                     
                     if (data.students.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No students found</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No students found</td></tr>';
                         return;
                     }
                     
                     data.students.forEach(student => {
                         const row = document.createElement('tr');
                         row.setAttribute('data-status', student.status);
+                        row.setAttribute('data-round', student.current_round || 'all');
                         
                         // Create status badge with appropriate styling
                         const statusBadgeClass = `badge status-${student.status}`;
@@ -438,29 +477,36 @@
                             <td>${student.name}</td>
                             <td>${student.college}</td>
                             <td><span class="${statusBadgeClass}">${statusText}</span></td>
+                            <td>${student.current_round || '-'}</td>
                             <td>${student.timestamp}</td>
                         `;
                         
                         tableBody.appendChild(row);
                     });
                     
-                    // Reset filter to show all students
+                    // Reset filters to show all students
                     document.querySelector('.status-badge.status-all').click();
+                    document.getElementById('round-filter').value = 'all';
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading data</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
                 });
         }
 
-        function filterStudentTable(status) {
+        function filterStudentTable(status, round) {
             const rows = document.querySelectorAll('#student-table tbody tr');
             
             rows.forEach(row => {
                 const rowStatus = row.getAttribute('data-status');
+                const rowRound = row.getAttribute('data-round');
+                
                 if (!rowStatus) return; // Skip rows without status (like "no data" messages)
                 
-                if (status === 'all' || rowStatus === status) {
+                const statusMatch = status === 'all' || rowStatus === status;
+                const roundMatch = round === 'all' || rowRound === round;
+                
+                if (statusMatch && roundMatch) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';

@@ -285,6 +285,8 @@ def delete_recruiter_from_job_fair(request):
     
     return redirect('program_manager_companies')
 
+# Modified get_company_students function in program_managers/views.py
+
 def get_company_students(request, job_fair_id, recruiter_id):
     """API to get students who visited a specific company at a job fair"""
     if 'program_manager_id' not in request.session:
@@ -315,7 +317,11 @@ def get_company_students(request, job_fair_id, recruiter_id):
                     'name': student.name,
                     'college': student.college_name,
                     'status': attendance.status,
-                    'timestamp': attendance.timestamp.strftime('%d/%m/%Y %I:%M %p')
+                    'timestamp': attendance.timestamp.strftime('%d/%m/%Y %I:%M %p'),
+                    'current_round': attendance.current_round,  # Add round information
+                    'round_1_status': attendance.round_1,
+                    'round_2_status': attendance.round_2,
+                    'round_3_status': attendance.round_3
                 })
             except StudentRegistration.DoesNotExist:
                 # Skip if student record not found
@@ -327,5 +333,3 @@ def get_company_students(request, job_fair_id, recruiter_id):
         return JsonResponse({'error': 'Job fair not found or not in your district'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
-
