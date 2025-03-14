@@ -9,14 +9,7 @@ services:
       - DEBUG=1
       - ALLOWED_HOSTS=*
     volumes:
-      - ./media:/app/media
-      - ./migration_script.sh:/app/migration_script.sh
-    command: >
-      bash -c "
-        chmod +x /app/migration_script.sh &&
-        /app/migration_script.sh &&
-        daphne -b 0.0.0.0 -p 8000 naan_mudhalvan_monolith.asgi:application
-      "
+      - ./media:/app/media 
 
   db:
     image: postgres:13
