@@ -510,6 +510,7 @@
 
 
 
+
         function filterStudentTable(status, round) {
             const rows = document.querySelectorAll('#student-table tbody tr');
 
@@ -518,17 +519,17 @@
                 if (!row.hasAttribute('data-status')) return;
 
                 const rowStatus = row.getAttribute('data-status');
+                const currentRound = parseInt(row.getAttribute('data-current-round') || '1');
+                
+                // Get individual round statuses
+                const round1Status = row.getAttribute('data-round-1');
+                const round2Status = row.getAttribute('data-round-2');
+                const round3Status = row.getAttribute('data-round-3');
 
                 // Handle status filtering
                 const statusMatch = status === 'all' || rowStatus === status;
-
-                // Get the current round of the student
-                const currentRound = parseInt(row.getAttribute('data-current-round') || '1');
-
-                // Get round history from data attribute
-                const roundHistory = JSON.parse(row.getAttribute('data-round-history') || '[]');
-
-                // Handle round filtering - this is the key change
+                
+                // Handle round filtering with a completely new approach
                 let roundMatch = false;
                 
                 if (round === 'all') {
@@ -536,15 +537,19 @@
                     roundMatch = true;
                 } else {
                     const roundNumber = parseInt(round);
-
-                    // Check if student ACTUALLY participated in this round
-                    // A student participates in a round if they have a status of 'passed' or 'failed' for that round
-                    // or if it's their current round and status is 'pending'
-                    roundMatch = roundHistory.some(r => {
-                        return r.round_number === roundNumber && 
-                            (r.status === 'passed' || r.status === 'failed' || 
-                                (r.status === 'pending' && currentRound >= roundNumber));
-                    });
+                    
+                    // A student participated in a round if:
+                    // 1. For Round 1: Everyone participates
+                    // 2. For Round 2: They passed Round 1 OR their current round is 2 or higher
+                    // 3. For Round 3: They passed Round 2 OR their current round is 3
+                    if (roundNumber === 1) {
+                        // Everyone participates in round 1
+                        roundMatch = true;
+                    } else if (roundNumber === 2) {
+                        roundMatch = (round1Status === 'passed') || (currentRound >= 2);
+                    } else if (roundNumber === 3) {
+                        roundMatch = (round2Status === 'passed') || (currentRound >= 3);
+                    }
                 }
                 
                 // Show/hide row based on combined filters
@@ -555,7 +560,6 @@
                 }
             });
         }
-
     </script>
 </body>
 </html>
