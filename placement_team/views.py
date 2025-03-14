@@ -1,3 +1,4 @@
+import os
 import random
 import string
 from django.contrib import messages 
@@ -377,3 +378,46 @@ def get_company_students(request, job_fair_id, recruiter_id):
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+def delete_recruiter_from_job_fair(request):
+    if request.method == "POST":
+        recruiter_id = request.POST.get('recruiter_id')
+        job_fair_id = request.POST.get('job_fair_id')
+        
+        if not recruiter_id or not job_fair_id:
+            return redirect('companies')
+            
+        try:
+            # Find the specific RecruiterJobFair entry
+            recruiter = Recruiter.objects.get(recruiter_id=recruiter_id)
+            job_fair = Job_fairs.objects.get(job_fair_id=job_fair_id)
+            
+            recruiter_job_fair = RecruiterJobFair.objects.filter(
+                recruiter=recruiter,
+                job_fair=job_fair
+            ).first()
+            
+            if recruiter_job_fair:
+                # Delete the QR code file if it exists
+                if recruiter_job_fair.qr_code:
+                    try:
+                        if os.path.isfile(recruiter_job_fair.qr_code.path):
+                            os.remove(recruiter_job_fair.qr_code.path)
+                    except Exception as e:
+                        # Just log the error but continue with deletion
+                        print(f"Error removing QR code file: {e}")
+                
+                # Delete the recruiter-job fair relationship
+                recruiter_job_fair.delete()
+                
+                # Note: This won't delete the Recruiter record itself, 
+                # only the association with this job fair
+            
+        except (Recruiter.DoesNotExist, Job_fairs.DoesNotExist):
+            pass
+        
+        # Redirect back to the companies page with the job fair ID to maintain selection
+        return redirect(f'/nm/pteam/companies?job_fair_id={job_fair_id}')
+    
+    return redirect('companies')
