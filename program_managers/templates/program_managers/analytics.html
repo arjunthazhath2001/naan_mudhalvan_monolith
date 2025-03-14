@@ -279,7 +279,7 @@
                 </div>
             </div>
 
-             <!-- Student Details Modal -->
+                <!-- Student Details Modal (to replace the existing modal in both templates) -->
             <div class="modal fade" id="studentModal" tabindex="-1" aria-labelledby="studentModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -298,6 +298,9 @@
                                         <option value="2">Round 2</option>
                                         <option value="3">Round 3</option>
                                     </select>
+                                    <small class="text-muted d-block mt-1">
+                                        Shows students who participated in the selected round
+                                    </small>
                                 </div>
                                 
                                 <!-- Status Selection -->
@@ -338,8 +341,15 @@
                         </div>
                     </div>
                 </div>
-            </div>        
-        {% else %}
+            </div>
+
+
+
+
+
+
+
+            {% else %}
         <div class="text-center text-muted py-5" id="no-job-fair-message">
             <p>Please select a job fair to view analytics</p>
         </div>
@@ -385,12 +395,13 @@
 
 
 
+
             // Company item click handler
             const companyItems = document.querySelectorAll('.company-item');
             companyItems.forEach(item => {
                 item.addEventListener('click', function() {
                     const recruiterId = this.getAttribute('data-recruiter-id');
-                    const jobFairId = jobFairSelect.value;
+                    const jobFairId = document.getElementById('job-fair-select').value;
                     const companyName = this.querySelector('td').textContent;
                     
                     // Update modal title
@@ -399,7 +410,7 @@
                     
                     // Show loading message
                     document.getElementById('student-table-body').innerHTML = 
-                        '<tr><td colspan="5" class="text-center">Loading students...</td></tr>';
+                        '<tr><td colspan="6" class="text-center">Loading students...</td></tr>';
                     
                     // Load students for this company
                     loadStudentsForCompany(jobFairId, recruiterId);
@@ -409,7 +420,6 @@
                     studentModal.show();
                 });
             });
-
             // Status filter click handler
             const statusBadges = document.querySelectorAll('.status-badge');
             statusBadges.forEach(badge => {
@@ -433,10 +443,16 @@
         });
 
 
+        // Updated loadStudentsForCompany function
         function loadStudentsForCompany(jobFairId, recruiterId) {
             const tableBody = document.getElementById('student-table-body');
             
-            fetch(`/nm/pmanager/get-company-students/${jobFairId}/${recruiterId}/`)
+            // Get the endpoint based on whether we're in placement team or program manager view
+            const endpoint = window.location.pathname.includes('/pteam/') 
+                ? `/nm/pteam/get-company-students/${jobFairId}/${recruiterId}/` 
+                : `/nm/pmanager/get-company-students/${jobFairId}/${recruiterId}/`;
+            
+            fetch(endpoint)
                 .then(response => response.json())
                 .then(data => {
                     tableBody.innerHTML = '';
@@ -447,9 +463,22 @@
                     }
                     
                     data.students.forEach(student => {
+                        // Create a row for each student with data attributes for filtering
                         const row = document.createElement('tr');
+                        
+                        // Store all student information as data attributes for filtering
+                        row.setAttribute('data-student-reg', student.registration_number);
                         row.setAttribute('data-status', student.status);
-                        row.setAttribute('data-round', student.current_round || 'all');
+                        row.setAttribute('data-current-round', student.current_round);
+                        
+                        // Store round history information for advanced filtering
+                        row.setAttribute('data-round-history', JSON.stringify(student.round_history));
+                        row.setAttribute('data-highest-round', student.highest_round);
+                        
+                        // Store individual round statuses
+                        row.setAttribute('data-round-1', student.round_1_status);
+                        row.setAttribute('data-round-2', student.round_2_status);
+                        row.setAttribute('data-round-3', student.round_3_status);
                         
                         // Create status badge with appropriate styling
                         const statusBadgeClass = `badge status-${student.status}`;
@@ -476,20 +505,42 @@
                     tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
                 });
         }
+        
+
+
 
 
         function filterStudentTable(status, round) {
             const rows = document.querySelectorAll('#student-table tbody tr');
             
             rows.forEach(row => {
+                // Skip rows without data attributes (like "no data" messages)
+                if (!row.hasAttribute('data-status')) return;
+                
                 const rowStatus = row.getAttribute('data-status');
-                const rowRound = row.getAttribute('data-round');
+                const rowCurrentRound = row.getAttribute('data-current-round');
+                const rowHighestRound = row.getAttribute('data-highest-round');
                 
-                if (!rowStatus) return; // Skip rows without status (like "no data" messages)
-                
+                // Handle status filtering
                 const statusMatch = status === 'all' || rowStatus === status;
-                const roundMatch = round === 'all' || rowRound === round;
                 
+                // Handle round filtering - this is the key change
+                let roundMatch = false;
+                
+                if (round === 'all') {
+                    // Show all rounds
+                    roundMatch = true;
+                } else {
+                    const roundNumber = parseInt(round);
+                    
+                    // Get round history from data attribute
+                    const roundHistory = JSON.parse(row.getAttribute('data-round-history') || '[]');
+                    
+                    // Check if student participated in this round
+                    roundMatch = roundHistory.some(r => r.round_number === roundNumber);
+                }
+                
+                // Show/hide row based on combined filters
                 if (statusMatch && roundMatch) {
                     row.style.display = '';
                 } else {
@@ -497,6 +548,7 @@
                 }
             });
         }
+    
 
     </script>
 </body>

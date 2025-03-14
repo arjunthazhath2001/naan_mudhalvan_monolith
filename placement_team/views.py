@@ -345,13 +345,14 @@ def analytics(request):
 
 
 
+
 def get_company_students(request, job_fair_id, recruiter_id):
     """API to get students who visited a specific company at a job fair"""
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Not authenticated'}, status=401)
     
     try:
-        # Get attendance records for this company
+        # Get all attendance records for this company
         attendances = RecruiterStudentAttendance.objects.filter(
             job_fair_id=job_fair_id,
             recruiter_id=recruiter_id
@@ -365,13 +366,41 @@ def get_company_students(request, job_fair_id, recruiter_id):
                     registration_number=attendance.student_registration_number
                 )
                 
+                # Create round history to track which rounds the student participated in
+                round_history = []
+                
+                # Round 1 - all students who visited should have data for round 1
+                round_1_data = {
+                    'round_number': 1,
+                    'status': attendance.round_1 if attendance.round_1 != 'not_started' else 'pending'
+                }
+                round_history.append(round_1_data)
+                
+                # Round 2 - only include if the student made it to round 2
+                if attendance.round_1 == 'passed' or attendance.current_round >= 2:
+                    round_2_data = {
+                        'round_number': 2,
+                        'status': attendance.round_2
+                    }
+                    round_history.append(round_2_data)
+                
+                # Round 3 - only include if the student made it to round 3
+                if attendance.round_2 == 'passed' or attendance.current_round >= 3:
+                    round_3_data = {
+                        'round_number': 3,
+                        'status': attendance.round_3
+                    }
+                    round_history.append(round_3_data)
+                
                 students.append({
                     'registration_number': student.registration_number,
                     'name': student.name,
                     'college': student.college_name,
                     'status': attendance.status,
                     'timestamp': attendance.timestamp.strftime('%d/%m/%Y %I:%M %p'),
-                    'current_round': attendance.current_round,  # Add round information
+                    'current_round': attendance.current_round,
+                    'round_history': round_history,  # Add round history
+                    'highest_round': max([r['round_number'] for r in round_history]),
                     'round_1_status': attendance.round_1,
                     'round_2_status': attendance.round_2,
                     'round_3_status': attendance.round_3
@@ -384,6 +413,9 @@ def get_company_students(request, job_fair_id, recruiter_id):
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+
 
 
 
