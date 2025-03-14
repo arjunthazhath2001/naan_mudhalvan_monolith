@@ -39,7 +39,7 @@ INSTALLED_APPS = [
      "placement_team",
     "students",
     "recruiters",
-    "channels"
+    "channels",
     "program_managers",
 ]
 

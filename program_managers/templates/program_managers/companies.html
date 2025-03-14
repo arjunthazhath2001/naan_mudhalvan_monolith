@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Program Manager - Recruiters</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: rgb(36, 36, 36);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+    
+        .dashboard-container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        .dashboard-logo {
+            margin: 20px 0;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .dashboard-header {
+            margin: 20px 0;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+        }
+        .btn-outline-primary {
+            border-width: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 15px;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Logo -->
+        <div class="dashboard-logo">
+            Naan Mudhalvan
+        </div>
+
+        <!-- Header Text -->
+        <div class="dashboard-header">
+            Hello Program Manager - {{ district }}
+        </div>
+
+        <!-- Buttons -->
+        <div class="btn-group w-100 mb-4" role="group">
+            <a href="{% url 'program_manager_index' %}"  class="btn btn-outline-secondary">Job Fairs</a>
+            <a href="{% url 'program_manager_companies' %}" class="btn btn-dark active">Companies</a>
+            <a href="{% url 'program_manager_analytics' %}" class="btn btn-outline-secondary">Analytics</a>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="input-group mb-3">
+                <select class="form-select" name="job_fair" id="job-fair-select" required>
+                    <option selected disabled value="">Select a job fair</option>
+                    {% for job_fair in job_fair_list %}
+                        <option value="{{ job_fair.job_fair_id }}" {% if selected_job_fair_id == job_fair.job_fair_id|stringformat:"i" %}selected{% endif %}>
+                            {{ job_fair }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="input-group mb-3">
+                <input type="email" class="form-control" name="recruiter_email" placeholder="Recruiter Email" required>
+                <button type="submit" class="btn btn-primary">ADD</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-bordered" id="recruiters-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Password</th>
+                        <th>QR Code</th>
+                        <th>Reset PSWD</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="recruiters-list">
+                    <!-- Recruiters will be loaded here dynamically -->
+                </tbody>
+            </table>
+        </div>
+    
+        <!-- Logout Button -->
+        <div class="d-flex justify-content-center mt-4">
+            <a href="#" class="btn btn-outline-danger" onclick="logoutConfirm(event)">Logout</a>
+        </div>
+    </div>
+    <!-- Bootstrap JS (optional, for future interactions) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const jobFairSelect = document.getElementById('job-fair-select');
+            
+            // Check if a job fair is pre-selected
+            if (jobFairSelect.value) {
+                // Trigger the change event to load recruiters
+                const event = new Event('change');
+                jobFairSelect.dispatchEvent(event);
+            }
+        });
+
+        document.getElementById('job-fair-select').addEventListener('change', function(){
+            const jobFairId = this.value;
+
+            // Clear the current table
+            const tableBody = document.getElementById('recruiters-list');
+            tableBody.innerHTML = '';
+
+            // If no job fair is selected, just return
+            if (!jobFairId) return;
+
+            // Fetch recruiters for this job fair
+            fetch(`/nm/pmanager/get-recruiters/${jobFairId}/`).then(response => response.json())
+            .then(data => {
+                data.recruiters.forEach(recruiter => {
+                    const row = document.createElement('tr');
+
+                    // Email cell
+                    const emailCell = document.createElement('td');
+                    emailCell.textContent = recruiter.email;
+                    row.appendChild(emailCell);
+                    
+                    // Password cell
+                    const passwordCell = document.createElement('td');
+                    passwordCell.textContent = recruiter.password;
+                    row.appendChild(passwordCell);
+                    
+                    const qrCell = document.createElement('td');
+                    if (recruiter.qr_code_url) {
+                        const qrImage = document.createElement('img');
+                        qrImage.src = recruiter.qr_code_url;
+                        qrImage.alt = "QR Code";
+                        qrImage.style.width = "100px";
+                        qrImage.style.height = "100px";
+                        
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = recruiter.qr_code_url;
+                        downloadLink.download = `recruiter_${recruiter.id}_qr.png`;
+                        downloadLink.className = "btn btn-sm btn-outline-secondary mt-1";
+                        downloadLink.textContent = "Download";
+                        
+                        qrCell.appendChild(qrImage);
+                        qrCell.appendChild(document.createElement('br'));
+                        qrCell.appendChild(downloadLink);
+                    } else {
+                        qrCell.textContent = "No QR code available";
+                    }
+                    row.appendChild(qrCell);
+
+                    // Reset password cell
+                    const resetCell = document.createElement('td');
+                    const resetForm = document.createElement('form');
+                    resetForm.method = 'POST';
+                    resetForm.action = "{% url 'program_manager_reset_password' %}";
+
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = "{{ csrf_token }}";
+                    resetForm.appendChild(csrfInput);
+
+                    const recruiterIdInput = document.createElement('input');
+                    recruiterIdInput.type = 'hidden';
+                    recruiterIdInput.name = 'recruiter_id';
+                    recruiterIdInput.value = recruiter.id;
+                    resetForm.appendChild(recruiterIdInput);
+
+                    // Add job fair ID to the form
+                    const jobFairIdInput = document.createElement('input');
+                    jobFairIdInput.type = 'hidden';
+                    jobFairIdInput.name = 'job_fair_id';
+                    jobFairIdInput.value = jobFairId;  // This is available from the outer scope
+                    resetForm.appendChild(jobFairIdInput);
+
+                    const resetButton = document.createElement('button');
+                    resetButton.className = 'btn btn-sm btn-outline-secondary';
+                    resetButton.textContent = 'RESET';
+                    resetForm.appendChild(resetButton);
+
+                    resetCell.appendChild(resetForm);
+                    row.appendChild(resetCell);
+                    
+                    // Delete cell
+                    const deleteCell = document.createElement('td');
+                    const deleteForm = document.createElement('form');
+                    deleteForm.method = 'POST';
+                    deleteForm.action = "{% url 'program_manager_delete_recruiter' %}";
+
+                    const deletecsrfInput = document.createElement('input');
+                    deletecsrfInput.type = 'hidden';
+                    deletecsrfInput.name = 'csrfmiddlewaretoken';
+                    deletecsrfInput.value = "{{ csrf_token }}";
+                    deleteForm.appendChild(deletecsrfInput);
+
+                    const deleteRecruiterIdInput = document.createElement('input');
+                    deleteRecruiterIdInput.type = 'hidden';
+                    deleteRecruiterIdInput.name = 'recruiter_id';
+                    deleteRecruiterIdInput.value = recruiter.id;
+                    deleteForm.appendChild(deleteRecruiterIdInput);
+
+                    // Add job fair ID to the form
+                    const deleteJobFairIdInput = document.createElement('input');
+                    deleteJobFairIdInput.type = 'hidden';
+                    deleteJobFairIdInput.name = 'job_fair_id';
+                    deleteJobFairIdInput.value = jobFairId;
+                    deleteForm.appendChild(deleteJobFairIdInput);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'btn btn-sm btn-outline-danger';
+                    deleteButton.textContent = 'DELETE';
+                    // Add confirmation dialog
+                    deleteButton.onclick = function(e) {
+                        if (!confirm('Are you sure you want to delete this recruiter from the job fair?')) {
+                            e.preventDefault();
+                        }
+                    };
+                    deleteForm.appendChild(deleteButton);
+
+                    deleteCell.appendChild(deleteForm);
+                    row.appendChild(deleteCell);
+                    
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching recruiters:', error);
+            });
+        });
+
+        function logoutConfirm(event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = "{% url 'program_manager_login' %}";
+            }
+        }
+    </script>
+</body>
+</html>
