@@ -120,12 +120,14 @@
             cursor: pointer;
         }
 
+
+        /* Status badges */
         .badge.status-pending {
             background-color: #f8f9fa;
             color: #212529;
         }
 
-        .badge.status-shortlisted {
+        .badge.status-next {
             background-color: #fff3cd;
             color: #664d03;
         }
@@ -140,6 +142,20 @@
             color: #842029;
         }
 
+        /* Fix for the invisible "Removed" text */
+        .badge.status-removed {
+            background-color: #e9ecef;
+            color: #212529; /* Dark text color to ensure visibility */
+        }
+
+        /* Status filter styling */
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
         .status-all {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -150,7 +166,7 @@
             border: 1px solid #dee2e6;
         }
 
-        .status-shortlisted {
+        .status-next {
             background-color: #fff3cd;
             border: 1px solid #ffecb5;
         }
@@ -165,9 +181,17 @@
             border: 1px solid #f5c2c7;
         }
 
+        .status-removed {
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+        }
+
         .status-badge.active {
             outline: 2px solid #0d6efd;
         }
+
+
+
 
         .table-responsive {
             overflow-x: auto;
@@ -299,72 +323,73 @@
             </div>
 
 
-            <!-- Student Details Modal (to replace the existing modal in both templates) -->
-            <div class="modal fade" id="studentModal" tabindex="-1" aria-labelledby="studentModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="studentModalLabel">Students</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="row mb-3">
-                                <!-- Round Selection Dropdown -->
-                                <div class="col-md-6">
-                                    <label class="form-label">Filter by Round:</label>
-                                    <select class="form-select" id="round-filter">
-                                        <option value="all" selected>All Rounds</option>
-                                        <option value="1">Round 1</option>
-                                        <option value="2">Round 2</option>
-                                        <option value="3">Round 3</option>
-                                    </select>
-                                    <small class="text-muted d-block mt-1">
-                                        Shows students who participated in the selected round
-                                    </small>
-                                </div>
-                                
-                                <!-- Status Selection -->
-                                <div class="col-md-6">
-                                    <label class="form-label">Filter by Status:</label>
-                                    <div class="status-filter">
-                                        <span class="status-badge status-all active" data-status="all">All</span>
-                                        <span class="status-badge status-pending" data-status="pending">Pending</span>
-                                        <span class="status-badge status-shortlisted" data-status="next">Next Round</span>
-                                        <span class="status-badge status-placed" data-status="placed">Placed</span>
-                                        <span class="status-badge status-rejected" data-status="rejected">Rejected</span>
-                                    </div>
+        <!-- Student Details Modal -->
+        <div class="modal fade" id="studentModal" tabindex="-1" aria-labelledby="studentModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="studentModalLabel">Students</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <!-- Round Selection Dropdown -->
+                            <div class="col-md-6">
+                                <label class="form-label">Filter by Round:</label>
+                                <select class="form-select" id="round-filter">
+                                    <option value="all" selected>All Rounds</option>
+                                    <option value="1">Round 1</option>
+                                    <option value="2">Round 2</option>
+                                    <option value="3">Round 3</option>
+                                </select>
+                                <small class="text-muted d-block mt-1">
+                                    Shows students who participated in the selected round
+                                </small>
+                            </div>
+                            
+                            <!-- Status Selection -->
+                            <div class="col-md-6">
+                                <label class="form-label">Filter by Status:</label>
+                                <div class="status-filter">
+                                    <span class="status-badge status-all active" data-status="all">All</span>
+                                    <span class="status-badge status-pending" data-status="pending">Pending</span>
+                                    <span class="status-badge status-next" data-status="next">Next Round</span>
+                                    <span class="status-badge status-placed" data-status="placed">Placed</span>
+                                    <span class="status-badge status-rejected" data-status="rejected">Rejected</span>
+                                    <span class="status-badge status-removed" data-status="removed">Removed</span>
                                 </div>
                             </div>
-                            <div class="table-responsive mt-3">
-                                <table class="table table-striped table-sm" id="student-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Reg #</th>
-                                            <th>Name</th>
-                                            <th>College</th>
-                                            <th>Status</th>
-                                            <th>Round</th>
-                                            <th>Visit Time</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="student-table-body">
-                                        <!-- Students will be loaded dynamically -->
-                                        <tr>
-                                            <td colspan="6" class="text-center">Select a company to view students</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-striped table-sm" id="student-table">
+                                <thead>
+                                    <tr>
+                                        <th>Reg #</th>
+                                        <th>Name</th>
+                                        <th>College</th>
+                                        <th>Status</th>
+                                        <th>Round</th>
+                                        <th>Visit Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="student-table-body">
+                                    <!-- Students will be loaded dynamically -->
+                                    <tr>
+                                        <td colspan="6" class="text-center">Select a company to view students</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
+        </div>            
 
 
-            {% else %}
+        {% else %}
         <div class="text-center text-muted py-5" id="no-job-fair-message">
             <p>Please select a job fair to view analytics</p>
         </div>
@@ -487,7 +512,10 @@
                         
                         // Create status badge with appropriate styling
                         const statusBadgeClass = `badge status-${student.status}`;
-                        const statusText = student.status.charAt(0).toUpperCase() + student.status.slice(1);
+                        
+                        // Format status text properly
+                        let statusText = student.status.charAt(0).toUpperCase() + student.status.slice(1);
+                        if (student.status === 'next') statusText = 'Next Round';
                         
                         row.innerHTML = `
                             <td>${student.registration_number}</td>
@@ -510,7 +538,6 @@
                     tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
                 });
         }
-
         // Function to filter students by status and round
         function filterStudentTable(status, round) {
             const rows = document.querySelectorAll('#student-table tbody tr');
@@ -519,15 +546,44 @@
                 // Skip rows without data attributes (like "no data" messages)
                 if (!row.hasAttribute('data-status')) return;
 
+                // Get the student's current overall status and round statuses
                 const rowStatus = row.getAttribute('data-status');
-                
-                // Get individual round statuses
                 const round1Status = row.getAttribute('data-round-1');
                 const round2Status = row.getAttribute('data-round-2');
                 const round3Status = row.getAttribute('data-round-3');
-
-                // Handle status filtering
-                const statusMatch = status === 'all' || rowStatus === status;
+                
+                // Get current badge element to potentially update it
+                const statusBadge = row.querySelector('.badge');
+                let effectiveStatus = rowStatus; // Default to the current overall status
+                
+                // Determine the effective status based on the selected round
+                if (round !== 'all') {
+                    const roundNumber = parseInt(round);
+                    
+                    // Set the effective status based on the round
+                    if (roundNumber === 1) {
+                        effectiveStatus = round1Status === 'passed' ? 'next' : (round1Status === 'failed' ? 'rejected' : rowStatus);
+                    } else if (roundNumber === 2) {
+                        effectiveStatus = round2Status === 'passed' ? 'next' : (round2Status === 'failed' ? 'rejected' : rowStatus);
+                    } else if (roundNumber === 3) {
+                        effectiveStatus = round3Status === 'passed' ? 'placed' : (round3Status === 'failed' ? 'rejected' : rowStatus);
+                    }
+                    
+                    // Update the status badge class and text if necessary
+                    if (statusBadge) {
+                        // Remove all status classes and add the appropriate one
+                        statusBadge.classList.remove('status-pending', 'status-next', 'status-placed', 'status-rejected', 'status-removed');
+                        statusBadge.classList.add('status-' + effectiveStatus);
+                        
+                        // Update the text
+                        let statusText = effectiveStatus.charAt(0).toUpperCase() + effectiveStatus.slice(1);
+                        if (effectiveStatus === 'next') statusText = 'Next Round';
+                        statusBadge.textContent = statusText;
+                    }
+                }
+                
+                // Handle status filtering based on the effective status for the selected round
+                const statusMatch = status === 'all' || effectiveStatus === status;
                 
                 // Handle round filtering
                 let roundMatch = false;
@@ -562,7 +618,6 @@
                 }
             });
         }
-
 
 </script>
 </body>
