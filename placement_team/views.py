@@ -376,7 +376,8 @@ def get_company_students(request, job_fair_id, recruiter_id):
                 }
                 round_history.append(round_1_data)
                 
-                # Round 2 - only include if the student made it to round 2
+                # Round 2 - only include if the student actually participated in round 2
+                # This means they passed round 1 or their current round is at least 2
                 if attendance.round_1 == 'passed' or attendance.current_round >= 2:
                     round_2_data = {
                         'round_number': 2,
@@ -384,7 +385,8 @@ def get_company_students(request, job_fair_id, recruiter_id):
                     }
                     round_history.append(round_2_data)
                 
-                # Round 3 - only include if the student made it to round 3
+                # Round 3 - only include if the student actually participated in round 3
+                # This means they passed round 2 or their current round is 3
                 if attendance.round_2 == 'passed' or attendance.current_round >= 3:
                     round_3_data = {
                         'round_number': 3,
@@ -399,7 +401,7 @@ def get_company_students(request, job_fair_id, recruiter_id):
                     'status': attendance.status,
                     'timestamp': attendance.timestamp.strftime('%d/%m/%Y %I:%M %p'),
                     'current_round': attendance.current_round,
-                    'round_history': round_history,  # Add round history
+                    'round_history': round_history,
                     'highest_round': max([r['round_number'] for r in round_history]),
                     'round_1_status': attendance.round_1,
                     'round_2_status': attendance.round_2,
@@ -413,8 +415,6 @@ def get_company_students(request, job_fair_id, recruiter_id):
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
-
 
 
 

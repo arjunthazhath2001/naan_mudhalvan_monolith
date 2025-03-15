@@ -376,6 +376,7 @@
     
     <!-- Custom JS -->
     <script>
+        // This script should be added to the analytics.html template
         document.addEventListener('DOMContentLoaded', function() {
             // Job Fair selector
             const jobFairSelect = document.getElementById('job-fair-select');
@@ -387,7 +388,6 @@
                     }
                 });
             }
-
 
             // Add event listener for the round filter dropdown
             const roundFilter = document.getElementById('round-filter');
@@ -404,6 +404,27 @@
                     filterStudentTable(selectedStatus, selectedRound);
                 });
             }
+
+            // Status filter click handler
+            const statusBadges = document.querySelectorAll('.status-badge');
+            statusBadges.forEach(badge => {
+                badge.addEventListener('click', function() {
+                    // Remove active class from all badges
+                    statusBadges.forEach(b => b.classList.remove('active'));
+                    
+                    // Add active class to clicked badge
+                    this.classList.add('active');
+                    
+                    // Get the selected status
+                    const selectedStatus = this.getAttribute('data-status');
+                    
+                    // Get the selected round
+                    const selectedRound = document.getElementById('round-filter').value;
+                    
+                    // Apply both filters
+                    filterStudentTable(selectedStatus, selectedRound);
+                });
+            });
 
             // Company item click handler
             const companyItems = document.querySelectorAll('.company-item');
@@ -431,28 +452,7 @@
             });
         });
 
-            const statusBadges = document.querySelectorAll('.status-badge');
-            statusBadges.forEach(badge => {
-                badge.addEventListener('click', function() {
-                    // Remove active class from all badges
-                    statusBadges.forEach(b => b.classList.remove('active'));
-                    
-                    // Add active class to clicked badge
-                    this.classList.add('active');
-                    
-                    // Get the selected status
-                    const selectedStatus = this.getAttribute('data-status');
-                    
-                    // Get the selected round
-                    const selectedRound = document.getElementById('round-filter').value;
-                    
-                    // Apply both filters
-                    filterStudentTable(selectedStatus, selectedRound);
-                });
-            });
-
-
-
+        // Function to load students for a company
         function loadStudentsForCompany(jobFairId, recruiterId) {
             const tableBody = document.getElementById('student-table-body');
             
@@ -480,11 +480,7 @@
                         row.setAttribute('data-status', student.status);
                         row.setAttribute('data-current-round', student.current_round);
                         
-                        // Store round history information for advanced filtering
-                        row.setAttribute('data-round-history', JSON.stringify(student.round_history));
-                        row.setAttribute('data-highest-round', student.highest_round);
-                        
-                        // Store individual round statuses
+                        // Store individual round statuses for proper filtering
                         row.setAttribute('data-round-1', student.round_1_status);
                         row.setAttribute('data-round-2', student.round_2_status);
                         row.setAttribute('data-round-3', student.round_3_status);
@@ -515,7 +511,7 @@
                 });
         }
 
-
+        // Function to filter students by status and round
         function filterStudentTable(status, round) {
             const rows = document.querySelectorAll('#student-table tbody tr');
 
@@ -524,7 +520,6 @@
                 if (!row.hasAttribute('data-status')) return;
 
                 const rowStatus = row.getAttribute('data-status');
-                const currentRound = parseInt(row.getAttribute('data-current-round') || '1');
                 
                 // Get individual round statuses
                 const round1Status = row.getAttribute('data-round-1');
@@ -534,7 +529,7 @@
                 // Handle status filtering
                 const statusMatch = status === 'all' || rowStatus === status;
                 
-                // Handle round filtering with a completely new approach
+                // Handle round filtering
                 let roundMatch = false;
                 
                 if (round === 'all') {
@@ -544,16 +539,18 @@
                     const roundNumber = parseInt(round);
                     
                     // A student participated in a round if:
-                    // 1. For Round 1: Everyone participates
-                    // 2. For Round 2: They passed Round 1 OR their current round is 2 or higher
-                    // 3. For Round 3: They passed Round 2 OR their current round is 3
+                    // 1. For Round 1: Everyone participates in round 1
+                    // 2. For Round 2: They passed Round 1
+                    // 3. For Round 3: They passed Round 2
                     if (roundNumber === 1) {
                         // Everyone participates in round 1
                         roundMatch = true;
                     } else if (roundNumber === 2) {
-                        roundMatch = (round1Status === 'passed') || (currentRound >= 2);
+                        // Student made it to round 2 if they passed round 1
+                        roundMatch = (round1Status === 'passed');
                     } else if (roundNumber === 3) {
-                        roundMatch = (round2Status === 'passed') || (currentRound >= 3);
+                        // Student made it to round 3 if they passed round 2
+                        roundMatch = (round2Status === 'passed');
                     }
                 }
                 
@@ -566,6 +563,7 @@
             });
         }
 
-    </script>
+
+</script>
 </body>
 </html>
